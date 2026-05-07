@@ -1,0 +1,30 @@
+{
+  "mcpServers": {
+    "_comentario_general": "Esta config se commitea con el repo. Cada miembro del equipo vera los mismos MCPs. Para activar uno, quitale el prefijo guion bajo a la clave (p.ej. _github -> github) y rellena tokens via variables de entorno. NUNCA hardcodees secretos.",
+
+    "_github": {
+      "_descripcion": "Acceso a issues, PRs y codigo de GitHub. Requiere GITHUB_PERSONAL_ACCESS_TOKEN.",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      }
+    },
+
+    "_context7": {
+      "_descripcion": "Documentacion actualizada de librerias. Muy util para Python.",
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"]
+    },
+
+    "_filesystem": {
+      "_descripcion": "Acceso explicito al filesystem multi-repo.",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/ruta/a/tu/proyecto"
+      ]
+    }
+  }
+}

@@ -1,0 +1,79 @@
+---
+description: Implementa una spec aprobada paso a paso, actualizando docs viva al terminar
+allowed-tools: Read, Edit, Write, Glob, Grep, Bash(uv run:*), Bash(git diff:*), Bash(git status), Bash(git log:*), Bash(git rev-parse:*), Bash(git add:*), Bash(git commit:*), Bash(git push:*), Bash(date:*)
+argument-hint: "<ruta a docs/specs/NNNN-slug.md>"
+---
+
+Implementa la spec indicada en $ARGUMENTS siguiendo el flujo spec-driven.
+
+## Procedimiento
+
+1. **Carga la spec**:
+   - Lee el fichero indicado en $ARGUMENTS.
+   - Si no se ha indicado ruta, lista las specs en estado `Approved` con `ls docs/specs/` y pide al usuario cuál implementar.
+   - **Verifica el frontmatter `status`**:
+     - Si es `Draft` → para. Mensaje: "La spec está en Draft. Apruébala primero (cambia status a Approved)."
+     - Si es `Implemented` → para. Mensaje: "Esta spec ya está implementada en commit X."
+     - Si es `Rejected` → para. Mensaje: "Esta spec fue rechazada."
+     - Si es `Approved` → continúa.
+
+2. **Contexto**:
+   - Lee `CLAUDE.md` y `docs/STATE.md`.
+   - Lee specs `related` mencionadas en el frontmatter.
+
+3. **Plan de ataque**:
+   - Resume al usuario tu interpretación de la spec en 5-10 líneas.
+   - Pide confirmación explícita antes de empezar a tocar código.
+
+4. **Implementación**:
+   - Ejecuta el "Plan de implementación" (sección 5) de la spec, paso a paso.
+   - Por cada paso completado, marca el checkbox `[ ]` → `[x]` en la propia spec.
+   - **Reglas duras**:
+     - Si encuentras algo que **no encaja con la spec**, NO improvises: para, anota en la sección 10 ("Decisiones durante la implementación") la pregunta concreta y espera respuesta.
+     - Si la spec especifica una API, respétala. Si crees que debería ser diferente, anota el feedback en sección 10 pero implementa lo que dice la spec.
+     - Tests de cada paso ANTES de avanzar al siguiente cuando sea posible (TDD-friendly).
+
+5. **Verifica criterios de aceptación**:
+   - Recorre la sección 6 de la spec.
+   - Marca `[x]` cada criterio cuando lo verifiques.
+   - Si alguno no se cumple, **NO marques la spec como Implemented**.
+
+6. **Gate de calidad**:
+   - `uv run ruff check . --fix && uv run ruff format .`
+   - `uv run mypy src`
+   - `uv run pytest`
+   - Si algo falla, arréglalo antes de continuar.
+
+7. **Cierre**:
+   - Actualiza el frontmatter de la spec:
+     - `status: Implemented`
+     - `implemented_in: "pending"` (se actualizará con el hash real tras el commit)
+     - `updated: <fecha de hoy>`
+   - Mueve la fila correspondiente en `docs/STATE.md` de "Specs activas" a "Specs implementadas".
+   - Añade entrada en `docs/changelog.md` bajo `[No publicado]` referenciando la spec.
+   - Si se tomaron decisiones técnicas relevantes durante la implementación, propón añadir un ADR a `docs/STATE.md` sección 4 (NO lo añadas sin confirmación).
+
+8. **Commit y push**:
+   - Haz staging de todos los ficheros modificados (código + docs):
+     `git add <lista explícita de ficheros modificados>`
+   - Crea el commit con mensaje Conventional Commits:
+     `feat: implement spec NNNN — <título de la spec>`
+   - Obtén el hash del commit recién creado:
+     `git rev-parse --short HEAD`
+   - Actualiza `implemented_in: <hash>` en el frontmatter de la spec.
+   - Crea un segundo commit mínimo para registrar el hash:
+     `git add docs/specs/NNNN-*.md && git commit -m "chore: record implemented_in for spec NNNN"`
+   - Ejecuta `git push`.
+
+9. **Reporta**:
+   - Resumen de lo implementado.
+   - Ficheros creados/modificados.
+   - Criterios de aceptación: cuáles se cumplen, cuáles no.
+   - Estado del gate de calidad.
+   - Hash del commit de implementación.
+
+## Reglas adicionales
+
+- **No mezcles dos specs en una sesión** salvo que el usuario lo pida explícitamente.
+- **No saltes pasos del Plan de implementación** aunque parezcan triviales.
+- **Si la spec está mal**, NO la "arregles" silenciosamente: anota el problema en sección 10 y para a discutir.

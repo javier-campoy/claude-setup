@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(uv run:*)",
+      "Bash(uv sync:*)",
+      "Bash(uv lock:*)",
+      "Bash(uv pip list:*)",
+      "Bash(uv tree:*)",
+      "Bash(python:*)",
+      "Bash(pytest:*)",
+      "Bash(ruff:*)",
+      "Bash(mypy:*)",
+      "Bash(pre-commit:*)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(git show:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git stash:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(rg:*)",
+      "Bash(find:*)",
+      "Bash(tree:*)",
+      "Bash(echo:*)",
+      "Bash(date:*)",
+      "Bash(wc:*)",
+      "Read(./**)",
+      "Edit(./**)",
+      "Write(./**)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git reset:*)",
+      "Bash(git checkout:*)",
+      "Bash(uv add:*)",
+      "Bash(uv remove:*)",
+      "Bash(rm:*)"
+    ],
+    "deny": [
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./**/secrets/**)",
+      "Read(./**/*.pem)",
+      "Read(./**/*.key)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "_descripcion": "Auto-format Python con ruff tras cada Edit/Write/MultiEdit en .py",
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(echo \"$CLAUDE_TOOL_INPUT\" | python3 -c \"import sys,json;d=json.load(sys.stdin);print(d.get('file_path',''))\" 2>/dev/null); if [ -n \"$FILE\" ] && [[ \"$FILE\" == *.py ]] && [ -f \"$FILE\" ]; then uv run ruff format \"$FILE\" >/dev/null 2>&1; uv run ruff check --fix \"$FILE\" >/dev/null 2>&1; fi; exit 0"
+          }
+        ]
+      },
+      {
+        "_descripcion": "Marca un flag cuando se modifica src/ para que el hook Stop sepa que hay que sincronizar docs",
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(echo \"$CLAUDE_TOOL_INPUT\" | python3 -c \"import sys,json;d=json.load(sys.stdin);print(d.get('file_path',''))\" 2>/dev/null); if [ -n \"$FILE\" ] && [[ \"$FILE\" == *src/*.py ]] && [ -f \"$FILE\" ]; then mkdir -p .claude/.cache && touch .claude/.cache/src-changed.flag; fi; exit 0"
+          }
+        ]
+      },
+      {
+        "_descripcion": "Si se modifico STATE.md y changelog.md, considera la sincronizacion completada y limpia el flag",
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(echo \"$CLAUDE_TOOL_INPUT\" | python3 -c \"import sys,json;d=json.load(sys.stdin);print(d.get('file_path',''))\" 2>/dev/null); FLAG=.claude/.cache/src-changed.flag; if [ -f \"$FLAG\" ] && { [[ \"$FILE\" == *docs/STATE.md ]] || [[ \"$FILE\" == *docs/changelog.md ]] || [[ \"$FILE\" == *docs/specs/*.md ]]; }; then mkdir -p .claude/.cache && touch .claude/.cache/docs-touched.flag; fi; exit 0"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "_descripcion": "Auto-actualizacion agresiva: si hubo cambios en src/ y NO se ha tocado docs/, fuerza a Claude a continuar y actualizar STATE.md + changelog.md antes de cerrar la sesion.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FLAG=.claude/.cache/src-changed.flag; DOCS=.claude/.cache/docs-touched.flag; if [ -f \"$FLAG\" ] && [ ! -f \"$DOCS\" ]; then rm -f \"$FLAG\"; echo 'AUTO-DOCS: Has modificado ficheros bajo src/ pero NO has actualizado docs/. Antes de terminar la sesion, ejecuta:' >&2; echo '  1. /state      — regenerar docs/STATE.md con la nueva estructura/decisiones.' >&2; echo '  2. /changelog  — anadir entradas a docs/changelog.md describiendo los cambios.' >&2; echo '  3. Si has implementado una spec, marca su frontmatter como Implemented y muevela en STATE.md de Activas a Implementadas.' >&2; echo 'Esto es OBLIGATORIO en este proyecto: la documentacion viva debe quedar sincronizada en cada sesion.' >&2; exit 2; fi; rm -f \"$FLAG\" \"$DOCS\" 2>/dev/null; exit 0"
+          }
+        ]
+      }
+    ]
+  },
+  "env": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONUNBUFFERED": "1"
+  },
+  "includeCoAuthoredBy": true
+}
