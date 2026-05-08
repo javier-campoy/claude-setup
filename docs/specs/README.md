@@ -51,7 +51,7 @@ Claude:
 5. Al terminar:
    - Marca la spec como `Implemented` con commit/PR de referencia.
    - Actualiza `docs/STATE.md` (movida de Active → Implemented).
-   - Añade entrada en `docs/CHANGELOG.md`.
+   - Añade entrada en `docs/changelog.md`.
 
 ## Plantilla
 

@@ -54,19 +54,6 @@ $IncludeItems = @(
     "docs"
 )
 
-# Ficheros OBSOLETOS dentro del kit que NO copiamos
-$ExcludeFiles = @(
-    "mkdocs.yml",
-    "scripts",
-    "docs\getting-started.md",
-    "docs\installation.md",
-    "docs\contributing.md",
-    "docs\guides",
-    ".claude\commands\docs-build.md",
-    ".claude\commands\docs-serve.md",
-    ".claude\commands\docs-update.md"
-)
-
 Write-Host ""
 Write-Host "Copiando ficheros..." -ForegroundColor Yellow
 
@@ -86,17 +73,6 @@ foreach ($item in $IncludeItems) {
     }
 
     Copy-Item -Path $src -Destination $dst -Recurse -Force
-}
-
-# Borrar los obsoletos en el destino (por si Copy-Item los hubiera incluido)
-Write-Host ""
-Write-Host "Eliminando ficheros obsoletos..." -ForegroundColor Yellow
-foreach ($item in $ExcludeFiles) {
-    $path = Join-Path $TargetDir $item
-    if (Test-Path $path) {
-        Remove-Item -Path $path -Recurse -Force
-        Write-Host "  · borrado: $item" -ForegroundColor DarkGray
-    }
 }
 
 # Crear estructura src/ y tests/ con el nombre real del paquete

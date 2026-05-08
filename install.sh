@@ -48,19 +48,6 @@ INCLUDE=(
     "docs"
 )
 
-# Items obsoletos a excluir
-EXCLUDE=(
-    "mkdocs.yml"
-    "scripts"
-    "docs/getting-started.md"
-    "docs/installation.md"
-    "docs/contributing.md"
-    "docs/guides"
-    ".claude/commands/docs-build.md"
-    ".claude/commands/docs-serve.md"
-    ".claude/commands/docs-update.md"
-)
-
 echo "Copiando ficheros..."
 for item in "${INCLUDE[@]}"; do
     src="$KIT_DIR/$item"
@@ -76,15 +63,6 @@ for item in "${INCLUDE[@]}"; do
         cp "$src" "$dst"
     fi
     echo "  · $item"
-done
-
-echo ""
-echo "Eliminando ficheros obsoletos..."
-for item in "${EXCLUDE[@]}"; do
-    if [ -e "$TARGET_DIR/$item" ]; then
-        rm -rf "$TARGET_DIR/$item"
-        echo "  · borrado: $item"
-    fi
 done
 
 echo ""

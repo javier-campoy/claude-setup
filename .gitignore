@@ -1,2 +1,34 @@
+# Secrets
 .env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+
+# Virtualenvs
+.venv/
+venv/
+
+# Tooling caches
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Claude Code
+.claude/.cache/
+.claude/settings.local.json
+
+# OS / editor
 *:Zone.Identifier
+.DS_Store
+.idea/
+.vscode/
