@@ -23,8 +23,6 @@ Esta guía explica qué hace cada fichero del kit y cómo desplegarlo en tu proy
 | `docs/specs/` | Specs spec-driven: `README.md`, `_template.md` y una `NNNN-slug.md` por cambio. |
 | `README.md` | Quick start del proyecto. |
 
-> ⚠ Si en `outputs/` ves ficheros `mkdocs.yml`, `scripts/gen_ref_pages.py`, `docs/getting-started.md`, `docs/installation.md`, `docs/contributing.md`, `docs/guides/` o los comandos `docs-build.md`/`docs-serve.md`/`docs-update.md`: **ignóralos**. Pertenecen a un enfoque anterior (MkDocs) descartado. Quedan vacíos con un comentario "OBSOLETO".
-
 ---
 
 ## 2. Instalación paso a paso
@@ -230,7 +228,7 @@ docs/
 
 Lo regenera `/state` o el hook de auto-actualización cuando Claude termina una sesión que tocó `src/`.
 
-### CHANGELOG.md: el histórico
+### changelog.md: el histórico
 
 Formato [Keep a Changelog](https://keepachangelog.com/es/1.1.0/). Sección `[No publicado]` con seis subsecciones:
 

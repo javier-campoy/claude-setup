@@ -86,7 +86,7 @@ except InvalidURLError as e:
 - [ ] Crear `src/mi_paquete/urls/__init__.py` re-exportando los símbolos públicos.
 - [ ] Tests en `tests/urls/test_parser.py` cubriendo: caso feliz, esquemas inválidos, query strings, URLs malformadas.
 - [ ] Migrar los 3 sitios actuales que usan `urllib.parse` a la nueva API.
-- [ ] Actualizar `docs/STATE.md` y `docs/CHANGELOG.md`.
+- [ ] Actualizar `docs/STATE.md` y `docs/changelog.md`.
 
 ## 6. Criterios de aceptación
 

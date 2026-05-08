@@ -51,7 +51,7 @@ Pasos concretos en orden. Marcar checkboxes cuando se completan.
 - [ ] Paso 2
 - [ ] Paso 3
 - [ ] Tests
-- [ ] Actualizar `STATE.md` y `CHANGELOG.md`
+- [ ] Actualizar `STATE.md` y `changelog.md`
 
 ## 6. Criterios de aceptación
 

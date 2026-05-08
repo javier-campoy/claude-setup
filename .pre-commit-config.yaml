@@ -32,7 +32,7 @@ repos:
         files: ^src/
 
   # ---------------------------------------------------------------------------
-  # Documentación viva: si tocas src/ y NO actualizas docs/CHANGELOG.md o
+  # Documentación viva: si tocas src/ y NO actualizas docs/changelog.md o
   # docs/STATE.md en el mismo commit, avisa (warning, no bloquea).
   # Para volverlo bloqueante, cambia el script para que `exit 1`.
   # ---------------------------------------------------------------------------

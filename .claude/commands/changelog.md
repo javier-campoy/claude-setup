@@ -1,5 +1,5 @@
 ---
-description: Añade entradas al docs/CHANGELOG.md a partir de los cambios recientes
+description: Añade entradas al docs/changelog.md a partir de los cambios recientes
 allowed-tools: Read, Edit, Bash(git diff:*), Bash(git log:*), Bash(git status), Bash(date:*)
 argument-hint: "[rango git, p.ej. 'desde HEAD~3' o 'desde main']"
 ---
