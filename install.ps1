@@ -2,10 +2,16 @@
 # install.ps1 — Despliega el kit de Claude Code a un proyecto Python
 # ============================================================================
 # Uso (PowerShell):
-#   .\install.ps1 -TargetDir C:\ruta\a\tu\proyecto -PackageName mi_paquete
+#   .\install.ps1 -TargetDir C:\ruta\a\tu\proyecto -PackageName mi_paquete `
+#       [-ProjectName mi-paquete] `
+#       [-AuthorName "Ada Lovelace"] [-AuthorEmail ada@example.com] `
+#       [-GithubUser ada] [-NoPrompt]
 #
 # Si el proyecto no existe, se crea. Si existe, se añaden los ficheros sin
 # pisar lo que ya tengas (los conflictos se reportan).
+#
+# Si AuthorName/AuthorEmail/GithubUser no se pasan, se preguntan
+# interactivamente. Con -NoPrompt se usan defaults sin preguntar.
 # ============================================================================
 
 param(
@@ -15,12 +21,28 @@ param(
     [Parameter(Mandatory=$true)]
     [string]$PackageName,
 
-    [string]$ProjectName = ""
+    [string]$ProjectName = "",
+    [string]$AuthorName = "",
+    [string]$AuthorEmail = "",
+    [string]$GithubUser = "",
+    [switch]$NoPrompt
 )
 
 if (-not $ProjectName) {
     $ProjectName = $PackageName -replace '_', '-'
 }
+
+function Read-WithDefault {
+    param([string]$Prompt, [string]$Default)
+    if ($NoPrompt -or [Console]::IsInputRedirected) { return $Default }
+    $answer = Read-Host "$Prompt [$Default]"
+    if ([string]::IsNullOrWhiteSpace($answer)) { return $Default }
+    return $answer
+}
+
+if (-not $AuthorName)  { $AuthorName  = Read-WithDefault "Autor (nombre)"     "Tu Nombre" }
+if (-not $AuthorEmail) { $AuthorEmail = Read-WithDefault "Autor (email)"      "tu@email.com" }
+if (-not $GithubUser)  { $GithubUser  = Read-WithDefault "Usuario de GitHub"  "usuario" }
 
 $ErrorActionPreference = "Stop"
 $KitDir = $PSScriptRoot
@@ -28,10 +50,12 @@ $KitDir = $PSScriptRoot
 Write-Host "==============================================" -ForegroundColor Cyan
 Write-Host " Despliegue del kit Claude Code para Python" -ForegroundColor Cyan
 Write-Host "==============================================" -ForegroundColor Cyan
-Write-Host "Origen (kit): $KitDir"
-Write-Host "Destino:      $TargetDir"
-Write-Host "Paquete:      $PackageName  (nombre Python con underscores)"
-Write-Host "Proyecto:     $ProjectName  (nombre PyPI con guiones)"
+Write-Host "Origen (kit):  $KitDir"
+Write-Host "Destino:       $TargetDir"
+Write-Host "Paquete:       $PackageName  (nombre Python con underscores)"
+Write-Host "Proyecto:      $ProjectName  (nombre PyPI con guiones)"
+Write-Host "Autor:         $AuthorName <$AuthorEmail>"
+Write-Host "GitHub user:   $GithubUser"
 Write-Host ""
 
 # Crear destino si no existe
@@ -40,7 +64,7 @@ if (-not (Test-Path $TargetDir)) {
     Write-Host "✓ Carpeta destino creada" -ForegroundColor Green
 }
 
-# Lista de ficheros/carpetas ÚTILES a copiar (todo lo que NO está obsoleto)
+# Lista de ficheros/carpetas ÚTILES a copiar
 $IncludeItems = @(
     "CLAUDE.md",
     "README.md",
@@ -75,6 +99,10 @@ foreach ($item in $IncludeItems) {
     Copy-Item -Path $src -Destination $dst -Recurse -Force
 }
 
+# settings.local.json es per-developer: nunca debe llegar al destino.
+$LocalSettings = Join-Path $TargetDir ".claude\settings.local.json"
+if (Test-Path $LocalSettings) { Remove-Item -Path $LocalSettings -Force }
+
 # Crear estructura src/ y tests/ con el nombre real del paquete
 Write-Host ""
 Write-Host "Creando estructura del paquete..." -ForegroundColor Yellow
@@ -95,9 +123,9 @@ Set-Content -Path (Join-Path $TestsDir "__init__.py") -Value "" -Encoding UTF8
 Write-Host "  · src\$PackageName\__init__.py" -ForegroundColor Green
 Write-Host "  · tests\__init__.py" -ForegroundColor Green
 
-# Sustituir 'mi_paquete' y 'mi-paquete' por los nombres reales en los ficheros copiados
+# Sustituir tokens en los ficheros copiados
 Write-Host ""
-Write-Host "Personalizando nombres..." -ForegroundColor Yellow
+Write-Host "Personalizando nombres y metadatos..." -ForegroundColor Yellow
 $FilesToCustomize = @(
     "pyproject.toml",
     "CLAUDE.md",
@@ -112,10 +140,13 @@ $FilesToCustomize = @(
 foreach ($f in $FilesToCustomize) {
     $path = Join-Path $TargetDir $f
     if (Test-Path $path) {
-        (Get-Content $path -Raw) `
-            -replace 'mi_paquete', $PackageName `
-            -replace 'mi-paquete', $ProjectName `
-            | Set-Content -Path $path -Encoding UTF8
+        $content = Get-Content $path -Raw
+        $content = $content.Replace('mi_paquete',          $PackageName)
+        $content = $content.Replace('mi-paquete',          $ProjectName)
+        $content = $content.Replace('github.com/usuario/', "github.com/$GithubUser/")
+        $content = $content.Replace('Tu Nombre',           $AuthorName)
+        $content = $content.Replace('tu@email.com',        $AuthorEmail)
+        Set-Content -Path $path -Value $content -Encoding UTF8
         Write-Host "  · $f" -ForegroundColor Green
     }
 }
