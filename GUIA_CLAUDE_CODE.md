@@ -9,19 +9,25 @@ Esta guía explica qué hace cada fichero del kit y cómo desplegarlo en tu proy
 | Fichero | Para qué sirve |
 |---|---|
 | `CLAUDE.md` | Memoria principal. Claude lo lee al inicio de cada sesión. Contiene convenciones, comandos y reglas del proyecto. |
-| `.claude/settings.json` | Permisos del agente (allow / ask / deny) y hooks: auto-format con ruff + auto-actualización **bloqueante** de docs viva tras cambios en `src/`. |
-| `.claude/commands/*.md` | Comandos slash personalizados: `/test`, `/lint`, `/commit`, `/review`, `/refactor`, `/audit`, `/docs`, `/spec`, `/state`, `/changelog`, `/implement-spec`. |
+| `.claude/settings.json` | Permisos del agente (allow / ask / deny) y definición de hooks. |
+| `.claude/hooks/post-tool-use.sh` | Hook PostToolUse: auto-format con ruff + marcado de flags para doc-sync. |
+| `.claude/hooks/pre-stop.sh` | Hook Stop: bloquea la sesión si hay cambios en `src/` sin actualizar docs. |
+| `.claude/commands/*.md` | Comandos slash personalizados: `/test`, `/lint`, `/commit`, `/review`, `/refactor`, `/audit`, `/docs`, `/spec`, `/state`, `/changelog`, `/implement-spec`, `/release`. |
 | `.claude/agents/*.md` | Subagentes especializados: `code-reviewer`, `test-writer`, `docs-maintainer`, `refactorer`. |
 | `.mcp.json` | Configuración de servidores MCP (GitHub, context7, filesystem) — todos desactivados por defecto. |
+| `.github/workflows/ci.yml` | CI: lint + type-check + tests en cada push/PR a main. |
+| `.github/workflows/release.yml` | Release automático al hacer push de un tag `v*.*.*`. |
+| `.github/dependabot.yml` | Actualizaciones mensuales de las versiones de GitHub Actions. |
 | `pyproject.toml` | Config completa de Python: deps, ruff, mypy estricto, pytest, coverage. |
 | `.gitignore` | Ignora cachés, venvs, secrets, `.claude/.cache/` y ficheros locales de Claude. |
 | `.python-version` | Pinnea Python 3.12. |
-| `.pre-commit-config.yaml` | Hooks de pre-commit: ruff, mypy y aviso de docs viva sin sincronizar. |
+| `.pre-commit-config.yaml` | Hooks de pre-commit: ruff, mypy, gitleaks, conventional-commits, protect-main, docs-sync, quality-gate. |
 | `docs/index.md` | Mapa de la documentación. |
 | `docs/STATE.md` | Estado actual del repo: arquitectura, stack, ADRs, specs. Lo mantiene Claude. |
 | `docs/changelog.md` | Historial cronológico (Keep a Changelog). |
 | `docs/specs/` | Specs spec-driven: `README.md`, `_template.md` y una `NNNN-slug.md` por cambio. |
 | `README.md` | Quick start del proyecto. |
+| `install.sh` | Despliega el kit a un proyecto nuevo (Linux/macOS). |
 
 ---
 
@@ -45,9 +51,24 @@ Luego ejecuta `claude` desde tu proyecto e inicia sesión con tu cuenta.
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-### Paso 3: copiar los ficheros a tu repo
+### Paso 3: desplegar el kit a tu proyecto
 
-Copia todos los ficheros de este kit a la raíz de tu proyecto Python. La estructura final debe ser:
+```bash
+# Clona este repo en algún lugar local
+git clone https://github.com/usuario/claude-setup ~/claude-setup
+
+# Despliega a tu proyecto (crea la carpeta si no existe)
+~/claude-setup/install.sh ~/proyectos/mi-app mi_app \
+    --author-name "Tu Nombre" \
+    --author-email "tu@email.com" \
+    --github-user "tuusuario"
+```
+
+El script copia todos los ficheros, sustituye los tokens (`mi_paquete`, `Tu Nombre`, etc.), inicializa git, ejecuta `uv sync` e instala los hooks de pre-commit.
+
+### Paso 3 (alternativo): copiar a mano
+
+Si prefieres copiar ficheros tú mismo, la estructura final debe ser:
 
 ```
 mi-proyecto/
@@ -71,8 +92,16 @@ mi-proyecto/
 │       ├── README.md
 │       ├── _template.md
 │       └── 0001-ejemplo.md
+├── .github/
+│   ├── workflows/
+│   │   ├── ci.yml
+│   │   └── release.yml
+│   └── dependabot.yml
 └── .claude/
     ├── settings.json
+    ├── hooks/
+    │   ├── post-tool-use.sh
+    │   └── pre-stop.sh
     ├── commands/
     │   ├── test.md
     │   ├── lint.md
@@ -84,7 +113,8 @@ mi-proyecto/
     │   ├── spec.md
     │   ├── state.md
     │   ├── changelog.md
-    │   └── implement-spec.md
+    │   ├── implement-spec.md
+    │   └── release.md
     └── agents/
         ├── code-reviewer.md
         ├── test-writer.md
@@ -138,6 +168,7 @@ Dentro de la sesión de `claude`, escribe `/` y verás los comandos disponibles:
 | `/state` | Regenera `docs/STATE.md` con la estructura, stack, métricas y specs actuales. Preserva ADRs y contenido humano. |
 | `/changelog [rango]` | Añade entradas al `docs/changelog.md` para los cambios recientes. |
 | `/implement-spec <ruta>` | Implementa una spec aprobada paso a paso. Marca como Implemented y actualiza docs al terminar. |
+| `/release <versión>` | Prepara y publica una nueva versión: bump, changelog, tag `vX.Y.Z` y push. GitHub Actions crea el Release. |
 
 ### Subagentes
 
@@ -163,24 +194,21 @@ Los subagentes corren en su propio contexto, así que no contaminan el contexto 
 
 ### Hooks automáticos
 
-`.claude/settings.json` configura cuatro hooks que mantienen el repo limpio y la documentación viva sincronizada:
+La lógica de los hooks vive en `.claude/hooks/` (scripts shell) y se activa desde `.claude/settings.json`. Hay dos tipos:
 
-1. **Auto-format Python** (`PostToolUse`): si Claude edita un `.py`, ejecuta `ruff format` y `ruff check --fix`. Cero esfuerzo de formato.
+**`PostToolUse` → `.claude/hooks/post-tool-use.sh`** (se dispara tras cada Edit/Write):
 
-2. **Flag de cambios en `src/`** (`PostToolUse`): si Claude edita un `.py` bajo `src/`, crea `.claude/.cache/src-changed.flag`.
+1. **Auto-format Python**: si Claude edita un `.py`, ejecuta `ruff format` + `ruff check --fix`. Cero esfuerzo de formato.
+2. **Flag de cambios en `src/`**: si el fichero editado está bajo `src/`, crea `.claude/.cache/src-changed.flag`.
+3. **Flag de docs tocadas**: si Claude edita `docs/STATE.md`, `docs/changelog.md` o `docs/specs/*.md`, crea `.claude/.cache/docs-touched.flag`.
 
-3. **Flag de docs tocadas** (`PostToolUse`): si Claude edita `docs/STATE.md`, `docs/changelog.md` o cualquier `docs/specs/*.md`, crea `.claude/.cache/docs-touched.flag`.
+**`Stop` → `.claude/hooks/pre-stop.sh`** (se dispara al terminar cada respuesta):
 
-4. **Auto-actualización agresiva al terminar respuesta** (`Stop`): si existe `src-changed.flag` pero NO `docs-touched.flag`, **el hook bloquea con `exit 2`** y manda a Claude un mensaje obligando a:
-   - Ejecutar `/state` para regenerar `docs/STATE.md`.
-   - Ejecutar `/changelog` para añadir entradas.
-   - Si implementó una spec, marcar el frontmatter como `Implemented`.
+4. Si existe `src-changed.flag` pero **NO** `docs-touched.flag`, **el hook bloquea con `exit 2`** y obliga a Claude a continuar y actualizar docs antes de cerrar la sesión.
 
-   Claude no puede cerrar la sesión hasta que las docs estén sincronizadas.
+Para desactivar un hook temporalmente, edita `.claude/settings.json` y comenta el bloque correspondiente.
 
-Para desactivar uno temporalmente, edita `.claude/settings.json` y comenta el bloque correspondiente.
-
-**Si quieres saltarte la auto-actualización en una sesión puntual** (por ejemplo, estás haciendo un experimento sin importancia): borra el flag a mano antes de cerrar:
+**Si quieres saltarte la auto-actualización en una sesión puntual**:
 ```bash
 rm -f .claude/.cache/src-changed.flag
 ```
@@ -415,7 +443,52 @@ Reinicia `claude`.
 
 ---
 
-## 8. Errores comunes
+## 8. CI/CD y releases
+
+### CI automático
+
+`.github/workflows/ci.yml` se ejecuta en cada push a `main`/`master` y en cada PR. Hace:
+
+1. `uv run ruff check .` — lint
+2. `uv run ruff format --check .` — format
+3. `uv run mypy src` — types
+4. `uv run pytest --cov=src` — tests con cobertura
+
+Si alguno falla, el PR queda bloqueado. La cobertura se sube opcionalmente a Codecov (configura `CODECOV_TOKEN` en los secrets de GitHub).
+
+### Release automático
+
+`.github/workflows/release.yml` se dispara al hacer push de un tag `v*.*.*`. Hace:
+
+1. Pasa el gate de calidad completo.
+2. Extrae la sección del tag correspondiente de `docs/changelog.md`.
+3. Construye el paquete (`uv build`).
+4. Crea un GitHub Release con las notas del changelog y los artefactos `dist/`.
+
+Para publicar en PyPI, configura un **Trusted Publisher** en pypi.org y descomenta el paso `uv publish` en el workflow.
+
+### Flujo de release
+
+```bash
+# Con Claude Code (recomendado):
+/release 0.2.0
+
+# A mano:
+# 1. Edita pyproject.toml: version = "0.2.0"
+# 2. Edita docs/changelog.md: renombra [No publicado] → [0.2.0] - YYYY-MM-DD
+# 3. git add pyproject.toml docs/changelog.md
+# 4. git commit -m "chore: release v0.2.0"
+# 5. git tag -a v0.2.0 -m "Release v0.2.0"
+# 6. git push && git push --tags
+```
+
+El tag push dispara el workflow de release automáticamente.
+
+### Dependabot
+
+`.github/dependabot.yml` revisa mensualmente las versiones de GitHub Actions (como `actions/checkout`, `astral-sh/setup-uv`) y abre PRs automáticos para mantenerlas al día.
+
+## 9. Errores comunes
 
 - **"No se aplica el hook de format"** → Comprueba que `uv` está en el PATH y que el proyecto tiene `.venv` con ruff instalado (`uv sync --dev`).
 - **"Claude no usa los comandos slash"** → Verifica que existen en `.claude/commands/` y reinicia la sesión.
@@ -429,7 +502,7 @@ Reinicia `claude`.
 
 ---
 
-## 9. Próximos pasos
+## 10. Próximos pasos
 
 Cuando ya tengas soltura:
 

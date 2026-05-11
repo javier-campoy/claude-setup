@@ -9,29 +9,41 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es/1.1.0/) y este
 ## [No publicado]
 
 ### Añadido
-- `.gitignore` con entradas estándar de Python (`.venv/`, `__pycache__/`, cachés de `ruff`/`mypy`/`pytest`, `.coverage`, `dist/`, `build/`, `*.egg-info/`) y de Claude Code (`.claude/.cache/`, `.claude/settings.local.json`).
+- `.github/workflows/ci.yml`: pipeline de CI con ruff check, ruff format, mypy y pytest+cobertura; se ejecuta en cada push/PR a main.
+- `.github/workflows/release.yml`: workflow de release automático al hacer push de un tag `v*.*.*`; extrae el changelog, construye el paquete y crea el GitHub Release.
+- `.github/dependabot.yml`: actualizaciones mensuales automáticas de versiones de GitHub Actions.
+- `.claude/hooks/post-tool-use.sh`: hook PostToolUse que auto-formatea `.py` con ruff y marca los flags de doc-sync.
+- `.claude/hooks/pre-stop.sh`: hook Stop que bloquea la sesión si hay cambios en `src/` sin actualizar docs.
+- `.claude/commands/release.md`: comando `/release` para preparar y publicar versiones (bump, changelog, tag, push).
+- Hooks activados en `.claude/settings.json` (PostToolUse + Stop) apuntando a los scripts en `.claude/hooks/`.
+- `.github/` añadido a la lista `INCLUDE` de `install.sh` para distribuirlo en el deploy.
 
 ### Cambiado
-- Unificado el nombre del fichero de historial a `changelog.md` (minúsculas) en `docs/index.md`, `CLAUDE.md`, `GUIA_CLAUDE_CODE.md`, `.pre-commit-config.yaml`, `.claude/commands/changelog.md` y plantillas/specs de `docs/specs/`.
-- `install.sh` e `install.ps1`: eliminada la lista `EXCLUDE` (y su bloque de borrado) ahora que los ficheros obsoletos ya no existen en el kit fuente.
-- `install.sh` e `install.ps1`: setup agnóstico de usuario y proyecto. Aceptan `--author-name`/`-AuthorName`, `--author-email`/`-AuthorEmail` y `--github-user`/`-GithubUser` y, si faltan, los preguntan interactivamente (`--no-prompt`/`-NoPrompt` para usar defaults sin preguntar). Sustituyen además `Tu Nombre`, `tu@email.com` y `usuario/...` en `pyproject.toml` y otros ficheros del kit. Borran cualquier `.claude/settings.local.json` arrastrado al destino.
-
-### Deprecado
-- _Pendiente de cambios._
+- `README.md`: añadida badge de CI, sección de Releases y corrección del número de subagentes (4, no 2).
+- `GUIA_CLAUDE_CODE.md`: sección de ficheros actualizada con `.claude/hooks/` y `.github/`; sección de hooks reescrita apuntando a los scripts shell; nueva sección "CI/CD y releases" (sección 8); comandos slash actualizados con `/release`.
+- `CLAUDE.md`: sección de hooks actualizada; `/release` añadido a la lista de comandos.
 
 ### Eliminado
-- Restos del enfoque anterior basado en MkDocs: `mkdocs.yml`, `scripts/gen_ref_pages.py` (y el directorio `scripts/`), `docs/getting-started.md`, `docs/installation.md`, `docs/contributing.md`, `docs/guides/` (con `index.md` y `quickstart.md`), y los slash commands `.claude/commands/docs-build.md`, `docs-serve.md`, `docs-update.md`.
-- Nota de aviso sobre ficheros MkDocs obsoletos en `GUIA_CLAUDE_CODE.md`, ya innecesaria.
-
-### Seguridad
-- `.claude/settings.local.json` destrackeado de git (`git rm --cached`). Es un fichero per-developer; se quedaba en el repo con rutas locales y permisos demasiado amplios. Ya estaba ignorado en `.gitignore` desde el commit anterior.
+- `install.ps1` — el kit es solo para Linux/macOS.
 
 ### Arreglado
-- _Pendiente de cambios._
+- Hooks de doc-sync que habían sido movidos a settings de usuario y dejado de funcionar; ahora viven en `.claude/hooks/` y se distribuyen con el kit.
+- `install.ps1` instalaba solo el hook tipo `pre-commit`; ahora eliminado (solo Linux/macOS).
 
 ---
 
-## [0.1.0] - YYYY-MM-DD
+## [0.1.0] — Histórico previo
 
 ### Añadido
-- Primera versión del paquete.
+- `.gitignore` con entradas estándar de Python (`.venv/`, `__pycache__/`, cachés de `ruff`/`mypy`/`pytest`, `.coverage`, `dist/`, `build/`, `*.egg-info/`) y de Claude Code (`.claude/.cache/`, `.claude/settings.local.json`).
+
+### Cambiado
+- Unificado el nombre del fichero de historial a `changelog.md` (minúsculas).
+- `install.sh`: setup agnóstico de usuario y proyecto con flags `--author-name`, `--author-email`, `--github-user`.
+
+### Eliminado
+- Restos del enfoque anterior basado en MkDocs: `mkdocs.yml`, `scripts/`, `docs/getting-started.md`, `docs/installation.md`, `docs/contributing.md`, `docs/guides/`, slash commands `docs-build.md`, `docs-serve.md`, `docs-update.md`.
+
+### Seguridad
+- `.claude/settings.local.json` destrackeado de git.
+

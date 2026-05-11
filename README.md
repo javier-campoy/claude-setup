@@ -1,5 +1,7 @@
 # mi-paquete
 
+[![CI](https://github.com/usuario/mi-paquete/actions/workflows/ci.yml/badge.svg)](https://github.com/usuario/mi-paquete/actions/workflows/ci.yml)
+
 > Descripción breve del proyecto.
 
 ## Requisitos
@@ -50,13 +52,33 @@ Este repo está configurado para sacarle el máximo partido a [Claude Code](http
 - `CLAUDE.md` describe convenciones y comandos del proyecto.
 - `.claude/settings.json` define permisos seguros y un hook que auto-formatea con ruff tras cada edición.
 - `.claude/commands/` contiene comandos slash personalizados: `/test`, `/lint`, `/commit`, `/review`, `/refactor`, `/docs`.
-- `.claude/agents/` define dos subagentes: `code-reviewer` y `test-writer`.
+- `.claude/agents/` define cuatro subagentes: `code-reviewer`, `test-writer`, `docs-maintainer` y `refactorer`.
 
 Lanza Claude Code en la raíz del repo:
 
 ```bash
 claude
 ```
+
+## Releases
+
+Para publicar una nueva versión:
+
+```bash
+# Opción A: con Claude Code (recomendado)
+claude
+/release 0.2.0        # Prepara changelog, bump, tag y push
+
+# Opción B: manual
+# 1. Edita pyproject.toml — campo version
+# 2. Edita docs/changelog.md — renombra [No publicado] → [0.2.0] - YYYY-MM-DD
+# 3. git add pyproject.toml docs/changelog.md
+# 4. git commit -m "chore: release v0.2.0"
+# 5. git tag -a v0.2.0 -m "Release v0.2.0"
+# 6. git push && git push --tags
+```
+
+El workflow `.github/workflows/release.yml` detecta el tag y crea el GitHub Release automáticamente con el contenido del changelog.
 
 ## Estructura
 
@@ -67,7 +89,8 @@ claude
 ├── docs/                  # Documentación viva (STATE, changelog, specs)
 ├── pyproject.toml         # Config completa del proyecto
 ├── CLAUDE.md              # Memoria de Claude Code
-└── .claude/               # Comandos, subagentes y settings
+├── .claude/               # Comandos, subagentes, hooks y settings
+└── .github/               # CI/CD (ci.yml, release.yml, dependabot)
 ```
 
 ## Licencia

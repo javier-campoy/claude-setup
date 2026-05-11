@@ -37,7 +37,8 @@ Proyecto Python (paquete/librería). Stack moderno basado en `uv`, `ruff` y `pyt
 │       └── <modulo>.md   # Un fichero por módulo en src/
 ├── pyproject.toml        # Config del proyecto (deps, ruff, pytest, mypy)
 ├── .python-version       # Versión de Python pinneada
-└── .claude/              # Configuración de Claude Code
+├── .claude/              # Comandos, subagentes, hooks y settings
+└── .github/              # CI/CD (ci.yml, release.yml, dependabot.yml)
 ```
 
 > Convenciones de espejo:
@@ -135,10 +136,13 @@ Hotfixes triviales (typos, format, errores obvios de 1-2 líneas) pueden saltars
 
 ### Hooks que mantienen la doc viva sincronizada
 
-1. **Tras editar `.py` bajo `src/`** → un hook marca un flag interno `.claude/.cache/src-changed.flag`.
-2. **Tras editar `docs/STATE.md`, `docs/changelog.md` o cualquier `docs/specs/*.md`** → marca `.claude/.cache/docs-touched.flag`.
-3. **Al terminar la respuesta (`Stop` hook)**: si hay flag de src/ pero no de docs/, **el hook bloquea con `exit 2`** y obliga a Claude a continuar y actualizar `STATE.md` + `changelog.md` antes de cerrar la sesión.
-4. **Pre-commit `docs-sync-check`**: si commiteas cambios en `src/` sin tocar `docs/`, **bloquea el commit** (exit 1).
+Los hooks están en `.claude/hooks/` y configurados en `.claude/settings.json`:
+
+1. **Auto-format** (`PostToolUse`): si Claude edita un `.py`, ejecuta `ruff format` + `ruff check --fix` automáticamente.
+2. **Tras editar `.py` bajo `src/`** → marca `.claude/.cache/src-changed.flag`.
+3. **Tras editar `docs/STATE.md`, `docs/changelog.md` o `docs/specs/*.md`** → marca `.claude/.cache/docs-touched.flag`.
+4. **Al terminar la respuesta (`Stop` hook)**: si hay flag de src/ pero no de docs/, **bloquea con `exit 2`** y obliga a Claude a actualizar docs antes de cerrar la sesión.
+5. **Pre-commit `docs-sync-check`**: si commiteas cambios en `src/` sin tocar `docs/`, **bloquea el commit** (exit 1).
 
 ### Hooks de control de versiones (pre-commit, commit-msg, pre-push)
 
@@ -188,6 +192,7 @@ Invócalos con: `Use the code-reviewer subagent to review my recent changes`.
 - `/state` — Regenera `docs/STATE.md` con la estructura, stack, métricas y specs actuales, y sincroniza los `docs/modules/*.md`.
 - `/changelog [rango]` — Añade entradas al `docs/changelog.md` para los cambios recientes.
 - `/implement-spec <ruta>` — Implementa una spec aprobada paso a paso, actualizando docs (STATE.md, changelog, modules/), haciendo commit y push al terminar.
+- `/release <versión>` — Prepara y publica una nueva versión: bump en `pyproject.toml`, actualiza changelog, crea tag `vX.Y.Z` y hace push (el workflow de GitHub Actions crea el Release).
 
 ## Notas y decisiones de diseño
 

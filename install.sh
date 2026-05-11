@@ -98,6 +98,7 @@ INCLUDE=(
     ".pre-commit-config.yaml"
     ".mcp.json"
     ".claude"
+    ".github"
     "docs"
 )
 
