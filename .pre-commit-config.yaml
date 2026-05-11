@@ -1,7 +1,13 @@
-# Pre-commit hooks. Instala con: `uv run pre-commit install`
-# Ejecuta manualmente sobre todos los ficheros: `uv run pre-commit run --all-files`
+# Pre-commit hooks.
+# Instala con:
+#   uv run pre-commit install --hook-type pre-commit --hook-type commit-msg --hook-type pre-push
+# Ejecuta manualmente sobre todos los ficheros:
+#   uv run pre-commit run --all-files
 
 repos:
+  # ---------------------------------------------------------------------------
+  # Checks básicos de ficheros
+  # ---------------------------------------------------------------------------
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:
@@ -16,6 +22,17 @@ repos:
       - id: detect-private-key
       - id: mixed-line-ending
 
+  # ---------------------------------------------------------------------------
+  # Secrets scanning: detecta tokens, API keys, connection strings, etc.
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+
+  # ---------------------------------------------------------------------------
+  # Lint + format
+  # ---------------------------------------------------------------------------
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.6.9
     hooks:
@@ -23,6 +40,9 @@ repos:
         args: [--fix, --exit-non-zero-on-fix]
       - id: ruff-format
 
+  # ---------------------------------------------------------------------------
+  # Type checking
+  # ---------------------------------------------------------------------------
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.11.2
     hooks:
@@ -32,15 +52,50 @@ repos:
         files: ^src/
 
   # ---------------------------------------------------------------------------
-  # Documentación viva: si tocas src/ y NO actualizas docs/changelog.md o
-  # docs/STATE.md en el mismo commit, avisa (warning, no bloquea).
-  # Para volverlo bloqueante, cambia el script para que `exit 1`.
+  # Hooks locales
   # ---------------------------------------------------------------------------
   - repo: local
     hooks:
-      - id: docs-sync-check
-        name: docs viva sincronizada
-        entry: bash -c 'STAGED=$(git diff --cached --name-only); SRC=$(echo "$STAGED" | grep -E "^src/.*\.py$" | head -1); DOCS=$(echo "$STAGED" | grep -E "^docs/(STATE|changelog|specs/.*)\.md$" | head -1); if [ -n "$SRC" ] && [ -z "$DOCS" ]; then echo "WARNING: estás commiteando cambios en src/ sin tocar docs/. Considera ejecutar /state y /changelog antes de commitear."; fi; exit 0'
+      # -----------------------------------------------------------------------
+      # Protección de main: bloquea commits directos en main/master.
+      # Trabaja siempre en ramas feat/..., fix/..., etc.
+      # -----------------------------------------------------------------------
+      - id: protect-main-branch
+        name: proteger rama main
+        entry: bash -c 'BRANCH=$(git branch --show-current); if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "master" ]; then echo ""; echo "ERROR: commits directos a \"$BRANCH\" no están permitidos."; echo "  Crea una rama: git checkout -b feat/<nombre>"; echo ""; exit 1; fi'
         language: system
         pass_filenames: false
         stages: [pre-commit]
+
+      # -----------------------------------------------------------------------
+      # Documentación viva: BLOQUEA si tocas src/ sin actualizar docs/.
+      # Ejecuta /state y /changelog antes de commitear.
+      # -----------------------------------------------------------------------
+      - id: docs-sync-check
+        name: docs viva sincronizada
+        entry: bash -c 'STAGED=$(git diff --cached --name-only); SRC=$(echo "$STAGED" | grep -E "^src/.*\.py$" | head -1); DOCS=$(echo "$STAGED" | grep -E "^docs/(STATE|changelog|specs/.*)\.md$" | head -1); if [ -n "$SRC" ] && [ -z "$DOCS" ]; then echo ""; echo "ERROR: hay cambios en src/ sin actualizar docs/."; echo "  Ejecuta /state y /changelog antes de commitear."; echo ""; exit 1; fi'
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+      # -----------------------------------------------------------------------
+      # Conventional Commits: valida el formato del mensaje de commit.
+      # Formato: <tipo>[(<scope>)][!]: <resumen> (máx 72 chars)
+      # Tipos: feat fix docs refactor test chore perf ci build revert
+      # -----------------------------------------------------------------------
+      - id: conventional-commits
+        name: conventional commits
+        entry: bash -c 'MSG=$(head -1 "$1"); if echo "$MSG" | grep -qE "^(Merge |Revert |Initial commit)"; then exit 0; fi; if ! echo "$MSG" | grep -qE "^(feat|fix|docs|refactor|test|chore|perf|ci|build|revert)(\(.+\))?(!)?: .{1,72}"; then echo ""; echo "ERROR: el mensaje de commit no sigue Conventional Commits."; echo "  Formato : <tipo>[(<scope>)][!]: <resumen>  (max 72 chars)"; echo "  Tipos   : feat fix docs refactor test chore perf ci build revert"; echo "  Ejemplo : feat(auth): añadir soporte para login social"; echo ""; exit 1; fi' _
+        language: system
+        stages: [commit-msg]
+
+      # -----------------------------------------------------------------------
+      # Gate de calidad pre-push: ruff + mypy + pytest deben pasar antes
+      # de subir nada al remoto. Usa --no-verify solo en emergencias justificadas.
+      # -----------------------------------------------------------------------
+      - id: pre-push-quality-gate
+        name: gate de calidad (pre-push)
+        entry: bash -c 'echo ""; echo "▶ Gate de calidad pre-push..."; uv run ruff check . || { echo "  ruff FALLÓ"; exit 1; }; uv run mypy src || { echo "  mypy FALLÓ"; exit 1; }; uv run pytest -q || { echo "  pytest FALLÓ"; exit 1; }; echo "✓ Gate superado."; echo ""'
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

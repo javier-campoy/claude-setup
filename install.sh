@@ -197,10 +197,11 @@ fi
 
 echo ""
 echo "Instalando hooks de pre-commit..."
-if uv run pre-commit install; then
-    echo "  · pre-commit install OK"
+if uv run pre-commit install --hook-type pre-commit --hook-type commit-msg --hook-type pre-push; then
+    echo "  · pre-commit install OK (pre-commit + commit-msg + pre-push)"
 else
-    echo "  · pre-commit install falló. Ejecuta manualmente: uv run pre-commit install"
+    echo "  · pre-commit install falló. Ejecuta manualmente:"
+    echo "    uv run pre-commit install --hook-type pre-commit --hook-type commit-msg --hook-type pre-push"
 fi
 
 echo ""

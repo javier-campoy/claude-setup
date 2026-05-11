@@ -53,6 +53,9 @@ Ejecuta estos comandos para verificar tu trabajo. Si modificas el flujo, actuali
 # Instalar / sincronizar dependencias
 uv sync --all-extras --dev
 
+# Instalar hooks de git (primera vez o tras clonar)
+uv run pre-commit install --hook-type pre-commit --hook-type commit-msg --hook-type pre-push
+
 # Ejecutar tests
 uv run pytest                          # Todos los tests
 uv run pytest tests/test_foo.py        # Un fichero
@@ -135,7 +138,22 @@ Hotfixes triviales (typos, format, errores obvios de 1-2 líneas) pueden saltars
 1. **Tras editar `.py` bajo `src/`** → un hook marca un flag interno `.claude/.cache/src-changed.flag`.
 2. **Tras editar `docs/STATE.md`, `docs/changelog.md` o cualquier `docs/specs/*.md`** → marca `.claude/.cache/docs-touched.flag`.
 3. **Al terminar la respuesta (`Stop` hook)**: si hay flag de src/ pero no de docs/, **el hook bloquea con `exit 2`** y obliga a Claude a continuar y actualizar `STATE.md` + `changelog.md` antes de cerrar la sesión.
-4. **Pre-commit local**: si commiteas cambios en `src/` sin tocar `docs/`, sale un WARNING (no bloquea).
+4. **Pre-commit `docs-sync-check`**: si commiteas cambios en `src/` sin tocar `docs/`, **bloquea el commit** (exit 1).
+
+### Hooks de control de versiones (pre-commit, commit-msg, pre-push)
+
+Instala los tres tipos con:
+```bash
+uv run pre-commit install --hook-type pre-commit --hook-type commit-msg --hook-type pre-push
+```
+
+| Hook | Cuándo | Qué hace |
+|---|---|---|
+| `protect-main-branch` | pre-commit | Bloquea commits directos a `main`/`master`. Usa ramas `feat/...`, `fix/...`. |
+| `docs-sync-check` | pre-commit | Bloquea si hay cambios en `src/` sin actualizar `docs/`. |
+| `gitleaks` | pre-commit | Escanea secrets: tokens, API keys, connection strings, etc. |
+| `conventional-commits` | commit-msg | Valida que el mensaje siga el formato `<tipo>[(<scope>)]: <resumen>`. |
+| `pre-push-quality-gate` | pre-push | Ejecuta `ruff check` + `mypy src` + `pytest` antes de subir al remoto. |
 
 ### Reglas para Claude sobre la doc viva
 
