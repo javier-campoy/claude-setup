@@ -365,14 +365,17 @@ Dentro de cualquier `CLAUDE.md` puedes hacer `@otro_fichero.md` para incluir otr
 2. claude
 3. /spec "descripción de lo que quieres hacer"
 4. (Claude crea docs/specs/NNNN-slug.md en estado Draft)
-5. Revisas, editas, ajustas — y cuando estás conforme, cambias status a Approved.
+5. Revisas, editas, ajustas — cuando estás conforme, cambias status a Approved.
 6. /implement-spec docs/specs/NNNN-slug.md
-7. (Claude implementa siguiendo la spec, marca como Implemented y actualiza STATE.md + changelog.md automáticamente)
-8. /lint
-9. /test
-10. Use the code-reviewer subagent
-11. /commit
-12. git push origin feat/nombre  (manual)
+7. (Claude implementa siguiendo la spec, marca como Implemented,
+   actualiza STATE.md + changelog.md, hace push a la rama y sugiere el PR)
+8. Creas el PR — manualmente o con el comando gh que Claude sugiere.
+9. CI pasa (ci.yml en verde) → mergeas el PR a main.
+10. Si la feature completa una unidad de release:
+    git checkout main && git pull
+    /release 0.2.0
+    (Claude actualiza pyproject.toml + changelog, crea el tag, hace push;
+     GitHub Actions crea el Release automáticamente)
 ```
 
 ### Para arreglar un bug
@@ -445,48 +448,54 @@ Reinicia `claude`.
 
 ## 8. CI/CD y releases
 
-### CI automático
+### Cómo encaja en el flujo de trabajo
 
-`.github/workflows/ci.yml` se ejecuta en cada push a `main`/`master` y en cada PR. Hace:
+CI y releases no son pasos adicionales: son la salida natural del flujo spec-driven.
 
-1. `uv run ruff check .` — lint
-2. `uv run ruff format --check .` — format
-3. `uv run mypy src` — types
-4. `uv run pytest --cov=src` — tests con cobertura
-
-Si alguno falla, el PR queda bloqueado. La cobertura se sube opcionalmente a Codecov (configura `CODECOV_TOKEN` en los secrets de GitHub).
-
-### Release automático
-
-`.github/workflows/release.yml` se dispara al hacer push de un tag `v*.*.*`. Hace:
-
-1. Pasa el gate de calidad completo.
-2. Extrae la sección del tag correspondiente de `docs/changelog.md`.
-3. Construye el paquete (`uv build`).
-4. Crea un GitHub Release con las notas del changelog y los artefactos `dist/`.
-
-Para publicar en PyPI, configura un **Trusted Publisher** en pypi.org y descomenta el paso `uv publish` en el workflow.
-
-### Flujo de release
-
-```bash
-# Con Claude Code (recomendado):
-/release 0.2.0
-
-# A mano:
-# 1. Edita pyproject.toml: version = "0.2.0"
-# 2. Edita docs/changelog.md: renombra [No publicado] → [0.2.0] - YYYY-MM-DD
-# 3. git add pyproject.toml docs/changelog.md
-# 4. git commit -m "chore: release v0.2.0"
-# 5. git tag -a v0.2.0 -m "Release v0.2.0"
-# 6. git push && git push --tags
+```
+spec aprobada
+    ↓
+/implement-spec          ← Claude implementa, testea localmente y hace push a feature branch
+    ↓
+PR abierto               ← Claude sugiere el comando gh pr create
+    ↓
+ci.yml en verde          ← GitHub ejecuta ruff + mypy + pytest automáticamente
+    ↓
+merge a main             ← Tú decides cuándo, con CI verde
+    ↓
+/release X.Y.Z           ← Cuando la unidad de release está completa
+    ↓
+release.yml              ← GitHub crea el Release con el contenido de changelog.md
 ```
 
-El tag push dispara el workflow de release automáticamente.
+### CI (`ci.yml`)
+
+Se ejecuta en cada push y en cada PR. Hace: ruff check → ruff format → mypy → pytest con cobertura. **Un PR no se mergea con CI rojo.**
+
+La cobertura se sube opcionalmente a Codecov (configura el secret `CODECOV_TOKEN` en el repo de GitHub si quieres activarlo).
+
+### Release (`release.yml`)
+
+Se dispara al hacer push de un tag `v*.*.*`. Hace:
+1. Gate de calidad completo (igual que CI).
+2. Extrae la sección `[X.Y.Z]` de `docs/changelog.md`.
+3. Construye el paquete (`uv build`).
+4. Crea el GitHub Release con las notas del changelog y los artefactos en `dist/`.
+
+Para publicar también en PyPI, configura un **Trusted Publisher** en pypi.org y descomenta el paso `uv publish` en el workflow.
+
+### Release con `/release`
+
+```bash
+# Desde main, con los PRs ya mergeados:
+/release 0.2.0
+```
+
+Claude hace: bump en `pyproject.toml` → rename `[No publicado]` → `[0.2.0]` en changelog → commit → tag anotado → push. El tag dispara `release.yml` automáticamente.
 
 ### Dependabot
 
-`.github/dependabot.yml` revisa mensualmente las versiones de GitHub Actions (como `actions/checkout`, `astral-sh/setup-uv`) y abre PRs automáticos para mantenerlas al día.
+`.github/dependabot.yml` abre PRs mensuales para actualizar versiones de GitHub Actions (`actions/checkout`, `astral-sh/setup-uv`, etc.). Mergeables con un clic cuando CI pase.
 
 ## 9. Errores comunes
 

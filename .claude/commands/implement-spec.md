@@ -53,7 +53,10 @@ Implementa la spec indicada en $ARGUMENTS siguiendo el flujo spec-driven.
    - Añade entrada en `docs/changelog.md` bajo `[No publicado]` referenciando la spec.
    - Si se tomaron decisiones técnicas relevantes durante la implementación, propón añadir un ADR a `docs/STATE.md` sección 4 (NO lo añadas sin confirmación).
 
-8. **Commit y push**:
+8. **Commit a la rama de feature**:
+   - Verifica que NO estás en `main`/`master`:
+     `git branch --show-current`
+     Si la rama es `main` o `master`, **para** y avisa: "Estás en main. Crea una rama con `git checkout -b feat/<nombre>` antes de continuar."
    - Haz staging de todos los ficheros modificados (código + docs):
      `git add <lista explícita de ficheros modificados>`
    - Crea el commit con mensaje Conventional Commits:
@@ -63,14 +66,28 @@ Implementa la spec indicada en $ARGUMENTS siguiendo el flujo spec-driven.
    - Actualiza `implemented_in: <hash>` en el frontmatter de la spec.
    - Crea un segundo commit mínimo para registrar el hash:
      `git add docs/specs/NNNN-*.md && git commit -m "chore: record implemented_in for spec NNNN"`
-   - Ejecuta `git push`.
+   - Push a la rama de feature:
+     `git push origin <rama-actual>`
 
-9. **Reporta**:
-   - Resumen de lo implementado.
-   - Ficheros creados/modificados.
-   - Criterios de aceptación: cuáles se cumplen, cuáles no.
-   - Estado del gate de calidad.
-   - Hash del commit de implementación.
+9. **Propón el PR** al usuario:
+   - Informa: "El código está en `<rama-actual>`. Crea un PR para mergearlo a main."
+   - Si `gh` está disponible, sugiere el comando concreto:
+     ```
+     gh pr create \
+       --title "feat: spec NNNN — <título>" \
+       --body "Implementa spec NNNN.\n\nCambios:\n- <lista de ficheros clave>\n\n## Criterios de aceptación\n<lista marcada>"
+     ```
+   - Recuerda: **CI debe pasar** (`ci.yml` en verde) antes de mergear a main.
+   - Cuando todos los PRs relacionados estén mergeados, usa `/release X.Y.Z` para publicar.
+   - **NO hagas merge ni cierres el PR automáticamente**.
+
+10. **Reporta**:
+    - Resumen de lo implementado.
+    - Ficheros creados/modificados.
+    - Criterios de aceptación: cuáles se cumplen, cuáles no.
+    - Estado del gate de calidad local.
+    - Rama y hash del commit de implementación.
+    - Próximos pasos: esperar CI verde → mergear PR → `/release` cuando toque.
 
 ## Reglas adicionales
 

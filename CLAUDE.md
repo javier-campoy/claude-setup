@@ -99,13 +99,27 @@ uv run ruff check . --fix && uv run ruff format . && uv run mypy src && uv run p
 - Una unidad lógica por commit; mensajes en imperativo y en español o inglés (consistente).
 - Rebase preferido sobre merge para mantener el historial lineal.
 - **Nunca commitees sin haber pasado**: `ruff check . && ruff format . && mypy src && pytest`.
+- Todo cambio de código vive en una rama de feature (`feat/...`, `fix/...`). Nunca directamente en `main`.
+- Tras implementar, push a la rama y abre un PR. **No hagas merge directo ni automático a `main`.**
+- **CI debe estar en verde antes de mergear** cualquier PR (`ci.yml` debe pasar).
+
+## CI/CD y releases
+
+- **CI** (`.github/workflows/ci.yml`): ruff + mypy + pytest en cada push/PR. Un PR no se mergea con CI rojo.
+- **Releases** se hacen con `/release <versión>` sobre `main`, después de mergear una o más features:
+  - Bump en `pyproject.toml` + rename `[No publicado]` → `[X.Y.Z]` en changelog.
+  - `git tag vX.Y.Z` → GitHub Actions construye el paquete y crea el GitHub Release con el contenido del changelog.
+- **Versionado semántico** (`MAJOR.MINOR.PATCH`):
+  - `PATCH` — hotfixes y correcciones sin nueva API pública.
+  - `MINOR` — features nuevas, compatibles hacia atrás.
+  - `MAJOR` — cambios breaking de API.
 
 ## Reglas para Claude (importante)
 
 1. **Antes de escribir código**, lee los ficheros relevantes con `Read` y orienta tus cambios al estilo existente.
 2. **Cuando edites código**, ejecuta lint/format/tests al terminar (el hook lo hace automáticamente para format).
 3. **No instales dependencias** sin pedir confirmación. Si necesitas una nueva dep, propón la línea para `pyproject.toml` y espera aprobación.
-4. **No hagas push directo a `main`**. Trabaja siempre en ramas `feat/...`, `fix/...`.
+4. **No hagas push directo a `main`**. Trabaja siempre en ramas `feat/...`, `fix/...`. Tras implementar, push a la rama y sugiere al usuario abrir un PR. **No hagas merge automático**: el usuario decide cuándo mergear, y solo después de que CI esté en verde.
 5. **Tests primero cuando arreglemos un bug**: reproduce el bug en un test que falle, luego arregla.
 6. **No suprimas warnings** ni bypassees `mypy`/`ruff` con `# type: ignore` o `# noqa` salvo que sea imprescindible y comentado.
 7. **Comentarios**: explica el *por qué*, no el *qué*. El código debe ser autoexplicativo.

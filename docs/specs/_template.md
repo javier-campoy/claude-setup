@@ -60,6 +60,7 @@ Lista verificable de qué debe ser cierto cuando se considere implementada.
 - [ ] CA1: Comportamiento X funciona en escenario Y.
 - [ ] CA2: Tests para casos límite Z.
 - [ ] CA3: Documentación de la API actualizada (docstrings).
+- [ ] CA4: CI verde — el pipeline `ci.yml` pasa en el PR de implementación.
 
 ## 7. Compatibilidad y migración
 

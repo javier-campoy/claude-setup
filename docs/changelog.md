@@ -9,6 +9,8 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es/1.1.0/) y este
 ## [No publicado]
 
 ### Añadido
+- `docs/STATE.md`: sección 8 "CI/CD y versioning" con tabla de pipelines, estrategia semver e historial de releases.
+- `docs/specs/_template.md`: criterio de aceptación estándar "CI verde" en la sección 6.
 - `.github/workflows/ci.yml`: pipeline de CI con ruff check, ruff format, mypy y pytest+cobertura; se ejecuta en cada push/PR a main.
 - `.github/workflows/release.yml`: workflow de release automático al hacer push de un tag `v*.*.*`; extrae el changelog, construye el paquete y crea el GitHub Release.
 - `.github/dependabot.yml`: actualizaciones mensuales automáticas de versiones de GitHub Actions.
@@ -20,8 +22,10 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es/1.1.0/) y este
 
 ### Cambiado
 - `README.md`: añadida badge de CI, sección de Releases y corrección del número de subagentes (4, no 2).
-- `GUIA_CLAUDE_CODE.md`: sección de ficheros actualizada con `.claude/hooks/` y `.github/`; sección de hooks reescrita apuntando a los scripts shell; nueva sección "CI/CD y releases" (sección 8); comandos slash actualizados con `/release`.
-- `CLAUDE.md`: sección de hooks actualizada; `/release` añadido a la lista de comandos.
+- `GUIA_CLAUDE_CODE.md`: sección 6 (flujo de trabajo) actualizada con pasos de PR, CI y release integrados; sección 8 reescrita con diagrama del flujo completo.
+- `CLAUDE.md`: nueva sección "CI/CD y releases"; sección "Git y commits" con PR workflow; regla 4 ampliada; `/release` en la lista de comandos.
+- `.claude/commands/implement-spec.md`: paso 8 verifica rama de feature, push al branch y sugiere PR en lugar de push ciego; paso 9 propone PR con CI reminder; paso 10 orienta el próximo paso (release).
+- `docs/specs/_template.md`: criterio CA4 "CI verde" añadido a la plantilla de criterios de aceptación.
 
 ### Eliminado
 - `install.ps1` — el kit es solo para Linux/macOS.

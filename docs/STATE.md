@@ -124,3 +124,34 @@ _Diagramas mentales de los flujos principales (request → handler → DB, etc.)
 _Qué viene a continuación. Suele ser un resumen de las specs en estado `Approved`._
 
 - [ ] (vacío)
+
+---
+
+## 8. CI/CD y versioning
+
+### Pipelines
+
+| Workflow | Trigger | Qué hace |
+|---|---|---|
+| [`ci.yml`](.github/workflows/ci.yml) | Push / PR a `main` | ruff check · ruff format · mypy · pytest + cobertura |
+| [`release.yml`](.github/workflows/release.yml) | Tag `v*.*.*` | Gate de calidad · `uv build` · GitHub Release con changelog |
+
+### Estrategia de versioning
+
+[Semantic Versioning](https://semver.org/): `MAJOR.MINOR.PATCH`
+
+| Tipo | Cuándo |
+|---|---|
+| `PATCH` | Hotfixes y correcciones sin nueva API pública |
+| `MINOR` | Features nuevas, compatibles hacia atrás |
+| `MAJOR` | Cambios breaking de API |
+
+**Flujo de release**: specs implementadas y mergeadas a `main` → `/release X.Y.Z` → tag → GitHub Release automático.
+
+### Historial de releases
+
+| Versión | Fecha | Specs incluidas | Notas |
+|---|---|---|---|
+| _(pendiente)_ | | | Primera release |
+
+<!-- Claude: actualiza esta tabla al ejecutar /release -->
