@@ -179,6 +179,32 @@ for f in "${FILES_CUSTOMIZE[@]}"; do
 done
 
 echo ""
+echo "Configuración global de usuario (~/.claude/settings.json)..."
+USER_SETTINGS_SRC="$KIT_DIR/user-settings.json"
+USER_SETTINGS_DST="$HOME/.claude/settings.json"
+if [ -f "$USER_SETTINGS_SRC" ]; then
+    INSTALL_USER=0
+    if [ "$NO_PROMPT" -eq 1 ]; then
+        INSTALL_USER=1
+    elif [ -f "$USER_SETTINGS_DST" ]; then
+        read -r -p "  Ya existe $USER_SETTINGS_DST. ¿Sobreescribir? [s/N]: " ans || ans=""
+        [[ "${ans,,}" == "s" || "${ans,,}" == "si" || "${ans,,}" == "sí" ]] && INSTALL_USER=1
+    else
+        read -r -p "  Instalar user-settings.json en $USER_SETTINGS_DST? [S/n]: " ans || ans=""
+        [[ -z "$ans" || "${ans,,}" == "s" || "${ans,,}" == "si" || "${ans,,}" == "sí" ]] && INSTALL_USER=1
+    fi
+    if [ "$INSTALL_USER" -eq 1 ]; then
+        mkdir -p "$HOME/.claude"
+        cp "$USER_SETTINGS_SRC" "$USER_SETTINGS_DST"
+        echo "  · user-settings.json → $USER_SETTINGS_DST  OK"
+    else
+        echo "  · salto (no se modifica ~/.claude/settings.json)"
+    fi
+else
+    echo "  · user-settings.json no encontrado en el kit, salto"
+fi
+
+echo ""
 echo "Inicializando git..."
 cd "$TARGET_DIR"
 if [ ! -d ".git" ]; then

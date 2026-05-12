@@ -12,23 +12,8 @@
       "Bash(ruff:*)",
       "Bash(mypy:*)",
       "Bash(pre-commit:*)",
-      "Bash(git status)",
-      "Bash(git diff:*)",
-      "Bash(git log:*)",
-      "Bash(git branch:*)",
-      "Bash(git show:*)",
-      "Bash(git rev-parse:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git stash:*)",
-      "Bash(ls:*)",
-      "Bash(cat:*)",
-      "Bash(rg:*)",
-      "Bash(find:*)",
-      "Bash(tree:*)",
-      "Bash(echo:*)",
-      "Bash(date:*)",
-      "Bash(wc:*)",
       "Read(./**)",
       "Edit(./**)",
       "Write(./**)"
@@ -41,15 +26,7 @@
       "Bash(uv remove:*)",
       "Bash(rm:*)"
     ],
-    "deny": [
-      "Bash(curl:*)",
-      "Bash(wget:*)",
-      "Read(./.env)",
-      "Read(./.env.*)",
-      "Read(./**/secrets/**)",
-      "Read(./**/*.pem)",
-      "Read(./**/*.key)"
-    ]
+    "deny": []
   },
   "hooks": {
     "PostToolUse": [
