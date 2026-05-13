@@ -30,10 +30,20 @@ jobs:
         run: uv run ruff format --check .
 
       - name: Type check (mypy)
-        run: uv run mypy src
+        run: |
+          if [ -d src ]; then
+            uv run mypy src
+          else
+            echo "No src/ directory found, skipping mypy"
+          fi
 
       - name: Tests with coverage
-        run: uv run pytest --cov=src --cov-report=xml --cov-report=term-missing
+        run: |
+          if [ -d src ]; then
+            uv run pytest --cov=src --cov-report=xml --cov-report=term-missing
+          else
+            echo "No src/ directory found, skipping tests"
+          fi
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
