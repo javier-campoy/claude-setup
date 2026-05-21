@@ -25,7 +25,7 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es/1.1.0/) y este
 
 ### Cambiado
 - `.claude/commands/spec.md`: nuevo paso 0 que **bloquea `/spec` si la visión no está rellenada** (deriva a `/vision`), lee `VISION.md` como contexto y exige declarar la alineación de la spec con el norte.
-- `.claude/commands/implement-spec.md`: el contexto ahora carga `docs/VISION.md`; la implementación debe respetar objetivos, no-objetivos y principios.
+- `.claude/commands/implement-spec.md`: el contexto ahora carga `docs/VISION.md`; la implementación debe respetar objetivos, no-objetivos y principios. Además, `/implement-spec` **bloquea si la spec conserva marcadores `_[VERIFICAR]_` sin resolver** (decisiones humanas pendientes que no deben adivinarse).
 - `.claude/commands/state.md`: la sección 1 de STATE.md pasa a enlazar a `VISION.md` (sin duplicarla) y se añade la regla de **no tocar nunca `VISION.md`** desde `/state`.
 - `.claude/agents/refactorer.md` y `.claude/agents/docs-maintainer.md`: incorporan `docs/VISION.md` como norte estratégico; el refactorer detecta drift contra el norte, el docs-maintainer audita (sin reescribir) la coherencia visión ↔ código/specs.
 - `CLAUDE.md`, `GUIA_CLAUDE_CODE.md`, `docs/index.md`, `docs/specs/README.md`, `README.md`: documentado el flujo `/vision → /spec → /implement-spec`, la distinción VISION (futuro) vs STATE (presente) y la visión como nexo de specs y sprints.

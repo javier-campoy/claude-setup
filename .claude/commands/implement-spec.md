@@ -16,6 +16,10 @@ Implementa la spec indicada en $ARGUMENTS siguiendo el flujo spec-driven.
      - Si es `Implemented` → para. Mensaje: "Esta spec ya está implementada en commit X."
      - Si es `Rejected` → para. Mensaje: "Esta spec fue rechazada."
      - Si es `Approved` → continúa.
+   - **Verifica que no queden marcadores `_[VERIFICAR]_` sin resolver**:
+     - Con Grep, busca `[VERIFICAR]` en la spec.
+     - Si aparece alguno → **para**. Una spec aprobada no debería tener huecos sin aclarar: cada `_[VERIFICAR]_` es una decisión humana pendiente que NO debes adivinar. Mensaje: "La spec tiene N marcadores `_[VERIFICAR]_` sin resolver (líneas X, Y, …). Acláralos en la spec antes de implementar y vuelve a ejecutar /implement-spec." Lista las líneas concretas.
+     - Si no hay ninguno → continúa.
 
 2. **Contexto**:
    - Lee `CLAUDE.md`, `docs/VISION.md` y `docs/STATE.md`.
@@ -93,6 +97,7 @@ Implementa la spec indicada en $ARGUMENTS siguiendo el flujo spec-driven.
 
 ## Reglas adicionales
 
+- **Sin `_[VERIFICAR]_` no se implementa.** Si la spec conserva marcadores `_[VERIFICAR]_`, son decisiones humanas sin resolver: para y pide que se aclaren. Nunca los rellenes adivinando.
 - **No mezcles dos specs en una sesión** salvo que el usuario lo pida explícitamente.
 - **No saltes pasos del Plan de implementación** aunque parezcan triviales.
 - **Si la spec está mal**, NO la "arregles" silenciosamente: anota el problema en sección 10 y para a discutir.
