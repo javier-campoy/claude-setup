@@ -14,7 +14,7 @@ Proyecto Python (paquete/librería). Stack moderno basado en `uv`, `ruff` y `pyt
 - **Lint + format**: [`ruff`](https://docs.astral.sh/ruff/) (sustituye a black, isort, flake8)
 - **Type checking**: `mypy` (modo estricto)
 - **Tests**: `pytest` + `pytest-cov`
-- **Documentación viva**: ficheros Markdown en `docs/` (`STATE.md`, `changelog.md`, `specs/`, `modules/`). Sin generación de sitio. Se lee desde el editor o GitHub.
+- **Documentación viva**: ficheros Markdown en `docs/` (`VISION.md`, `STATE.md`, `changelog.md`, `specs/`, `modules/`). Sin generación de sitio. Se lee desde el editor o GitHub.
 - **Pre-commit**: `pre-commit` con ruff, mypy y aviso de docs viva sin sincronizar.
 
 ## Estructura del proyecto
@@ -25,6 +25,7 @@ Proyecto Python (paquete/librería). Stack moderno basado en `uv`, `ruff` y `pyt
 ├── tests/                # Tests pytest (mirror de src/)
 ├── docs/                 # Documentación viva del repo
 │   ├── index.md          # Mapa de la documentación
+│   ├── VISION.md         # Norte del proyecto: dirección a futuro (humano, precede a las specs)
 │   ├── STATE.md          # Estado actual: arquitectura, stack, ADRs, specs
 │   ├── changelog.md      # Historial cronológico (Keep a Changelog)
 │   ├── specs/            # Specs (una por cambio significativo)
@@ -127,9 +128,10 @@ uv run ruff check . --fix && uv run ruff format . && uv run mypy src && uv run p
 
 ## Documentación viva: cómo funciona
 
-La documentación de este repo NO se publica como sitio web. Son ficheros Markdown plano dentro de `docs/`, leídos desde el editor o desde GitHub. Cuatro tipos de contenido:
+La documentación de este repo NO se publica como sitio web. Son ficheros Markdown plano dentro de `docs/`, leídos desde el editor o desde GitHub. Cinco tipos de contenido:
 
-- **`docs/STATE.md`** — Estado actual del repo: arquitectura, módulos, stack, ADRs (decisiones técnicas) y tabla de specs activas/implementadas. Lo regenera Claude tras cambios en `src/`.
+- **`docs/VISION.md`** — El **norte del proyecto**: hacia dónde vamos y por qué (propósito, objetivos, no-objetivos, principios rectores, temas estratégicos). Es **prescriptivo y de propiedad humana**, evoluciona deliberadamente (con `/vision`) y se construye **antes** de la primera spec. No lo regenera `/state`. A diferencia de `STATE.md` (presente, autogenerado), `VISION.md` define el futuro y es la referencia contra la que se justifica toda spec.
+- **`docs/STATE.md`** — Estado actual del repo: arquitectura, módulos, stack, ADRs (decisiones técnicas) y tabla de specs activas/implementadas. Lo regenera Claude tras cambios en `src/`. Su sección 1 enlaza a `VISION.md` (no la duplica).
 - **`docs/changelog.md`** — Historial cronológico (formato [Keep a Changelog](https://keepachangelog.com/es/1.1.0/)). Sección `[No publicado]` se rellena tras cada cambio.
 - **`docs/specs/NNNN-slug.md`** — Una spec por unidad de cambio. Frontmatter con estado: `Draft` → `Approved` → `Implemented` (o `Rejected`). El proyecto es **spec-driven**: cualquier cambio no trivial empieza con una spec aprobada.
 - **`docs/modules/<modulo>.md`** — Documentación detallada de cada módulo Python en `src/`: API pública, responsabilidad, dependencias internas y ejemplos de uso. Un fichero por módulo, generado y mantenido automáticamente por Claude.
@@ -137,7 +139,11 @@ La documentación de este repo NO se publica como sitio web. Son ficheros Markdo
 ### Flujo spec-driven (obligatorio para cambios no triviales)
 
 ```
-1. /spec "qué quieres"          → crea docs/specs/NNNN-slug.md (Draft)
+0. /vision "describe el proyecto"   (una vez, antes de la primera spec)
+                                 → crea/rellena docs/VISION.md (el norte)
+                                 → la revisas y ajustas; evoluciona luego con /vision
+1. /spec "qué quieres"          → verifica que la visión existe (si no, te manda a /vision)
+                                 → crea docs/specs/NNNN-slug.md (Draft), alineada con el norte
 2. revisas, editas, apruebas    → cambias status a Approved
 3. /implement-spec docs/specs/NNNN-slug.md
                                  → Claude implementa siguiendo la spec
@@ -145,6 +151,8 @@ La documentación de este repo NO se publica como sitio web. Son ficheros Markdo
                                  → actualiza STATE.md + changelog.md
                                  → hace commit y push automáticamente
 ```
+
+La **visión es el nexo**: precede a las specs y se toma de referencia en sprints, specs y decisiones técnicas. No es inmutable — evoluciona con `/vision` conforme el proyecto aprende.
 
 Hotfixes triviales (typos, format, errores obvios de 1-2 líneas) pueden saltarse el spec.
 
@@ -175,6 +183,9 @@ uv run pre-commit install --hook-type pre-commit --hook-type commit-msg --hook-t
 
 ### Reglas para Claude sobre la doc viva
 
+- **La visión (`docs/VISION.md`) es el norte.** Toda spec debe poder justificarse contra ella. `/spec` exige que esté rellenada; si no lo está, deriva al usuario a `/vision` antes de crear specs.
+- **NUNCA regeneres ni reescribas `docs/VISION.md` desde `/state` ni automáticamente.** Es de propiedad humana. Solo se edita con `/vision` (modo evolucionar) y registrando una entrada en su Historial de revisiones. Ante cambios grandes de rumbo, propón y espera confirmación.
+- Si detectas que el código o una spec contradicen la visión (persiguen un no-objetivo, violan un principio), **NO lo resuelvas en silencio**: avisa y sugiere `/vision` para actualizar el norte o replantear el trabajo.
 - Tras CUALQUIER cambio no trivial en `src/`, **debes** actualizar `docs/STATE.md`, `docs/changelog.md` y el `docs/modules/<modulo>.md` afectado ANTES de terminar la sesión. El hook lo va a forzar; mejor hazlo proactivamente.
 - Si implementas una spec, marca su frontmatter `status: Implemented` y `implemented_in: <commit>` y muévela en STATE.md de "Activas" a "Implementadas".
 - Si tomas una decisión técnica relevante (cambio de librería, cambio de patrón arquitectónico), **propón** un ADR en `STATE.md` sección 4. NO lo añadas sin confirmación humana.
@@ -189,7 +200,7 @@ uv run pre-commit install --hook-type pre-commit --hook-type commit-msg --hook-t
 - `code-reviewer` — Revisa cambios buscando bugs, problemas de seguridad y mejoras de diseño.
 - `test-writer` — Genera tests pytest exhaustivos para código existente.
 - `docs-maintainer` — Audita coherencia código ↔ docs viva. Úsalo cuando sospeches que `STATE.md`, `changelog.md`, las specs o los `modules/*.md` no reflejan la realidad del código.
-- `refactorer` — Mantiene el repo coherente con la visión global de `docs/STATE.md` y los ADRs. Detecta drift arquitectónico, deuda estructural, duplicación e inconsistencias. Propone refactors priorizados; aplica los pequeños tras confirmación, sugiere `/spec` para los grandes.
+- `refactorer` — Mantiene el repo coherente con el norte de `docs/VISION.md` y la arquitectura/ADRs de `docs/STATE.md`. Detecta drift respecto al norte, drift arquitectónico, deuda estructural, duplicación e inconsistencias. Propone refactors priorizados; aplica los pequeños tras confirmación, sugiere `/spec` para los grandes.
 
 Invócalos con: `Use the code-reviewer subagent to review my recent changes`.
 
@@ -202,7 +213,8 @@ Invócalos con: `Use the code-reviewer subagent to review my recent changes`.
 - `/refactor` — Refactoriza un fichero respetando las convenciones del proyecto.
 - `/audit [ámbito]` — Auditoría arquitectónica vía subagente `refactorer`. Compara contra `docs/STATE.md` y los ADRs, propone refactors priorizados.
 - `/docs` — Genera/actualiza docstrings en un fichero concreto y sincroniza el `docs/modules/<modulo>.md` correspondiente.
-- `/spec <descripción>` — Crea una nueva spec en `docs/specs/` (estado Draft).
+- `/vision [descripción]` — Crea o evoluciona `docs/VISION.md`, el norte del proyecto. Se usa una vez antes de la primera spec, y luego cuando cambia la dirección (registrando la revisión).
+- `/spec <descripción>` — Crea una nueva spec en `docs/specs/` (estado Draft). Exige que la visión esté rellenada.
 - `/state` — Regenera `docs/STATE.md` con la estructura, stack, métricas y specs actuales, y sincroniza los `docs/modules/*.md`.
 - `/changelog [rango]` — Añade entradas al `docs/changelog.md` para los cambios recientes.
 - `/implement-spec <ruta>` — Implementa una spec aprobada paso a paso, actualizando docs (STATE.md, changelog, modules/), haciendo commit y push al terminar.

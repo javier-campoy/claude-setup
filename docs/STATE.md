@@ -9,7 +9,9 @@
 
 ## 1. Visión general
 
-_Resumen del proyecto en 3-5 líneas: qué hace, para quién, qué problema resuelve._
+_Resumen del proyecto en 3-5 líneas: qué hace, para quién, qué problema resuelve (estado actual)._
+
+> 🧭 **La dirección a futuro vive en [`VISION.md`](VISION.md)** — el norte del proyecto (objetivos, no-objetivos, principios, temas estratégicos). Este apartado solo resume el presente; no dupliques la visión aquí.
 
 ---
 

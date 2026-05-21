@@ -39,11 +39,12 @@ uv run pre-commit run --all-files      # Todos los hooks
 La documentación viva del proyecto está en [`docs/`](docs/):
 
 - [`docs/index.md`](docs/index.md) — Mapa
+- [`docs/VISION.md`](docs/VISION.md) — El norte del proyecto: dirección a futuro (objetivos, no-objetivos, principios). Se construye antes de la primera spec.
 - [`docs/STATE.md`](docs/STATE.md) — Estado actual del repo (arquitectura, decisiones, specs)
 - [`docs/changelog.md`](docs/changelog.md) — Historial de cambios
 - [`docs/specs/`](docs/specs/) — Specs (una por cambio significativo)
 
-Es spec-driven: cada cambio no trivial empieza con una spec aprobada. Ver [`docs/specs/README.md`](docs/specs/README.md).
+Es spec-driven y guiado por una visión: defines el norte con `/vision`, y luego cada cambio no trivial empieza con una spec aprobada que se justifica contra él. Ver [`docs/specs/README.md`](docs/specs/README.md).
 
 ## Trabajar con Claude Code
 
@@ -51,7 +52,7 @@ Este repo está configurado para sacarle el máximo partido a [Claude Code](http
 
 - `CLAUDE.md` describe convenciones y comandos del proyecto.
 - `.claude/settings.json` define permisos seguros y un hook que auto-formatea con ruff tras cada edición.
-- `.claude/commands/` contiene comandos slash personalizados: `/test`, `/lint`, `/commit`, `/review`, `/refactor`, `/docs`.
+- `.claude/commands/` contiene comandos slash personalizados: `/vision`, `/spec`, `/implement-spec`, `/test`, `/lint`, `/commit`, `/review`, `/refactor`, `/docs`, `/state`, `/release`.
 - `.claude/agents/` define cuatro subagentes: `code-reviewer`, `test-writer`, `docs-maintainer` y `refactorer`.
 
 Lanza Claude Code en la raíz del repo:
@@ -86,7 +87,7 @@ El workflow `.github/workflows/release.yml` detecta el tag y crea el GitHub Rele
 .
 ├── src/mi_paquete/        # Código del paquete
 ├── tests/                 # Tests pytest
-├── docs/                  # Documentación viva (STATE, changelog, specs)
+├── docs/                  # Documentación viva (VISION, STATE, changelog, specs)
 ├── pyproject.toml         # Config completa del proyecto
 ├── CLAUDE.md              # Memoria de Claude Code
 ├── .claude/               # Comandos, subagentes, hooks y settings

@@ -2,6 +2,8 @@
 
 Cada cambio significativo del proyecto empieza con una **spec**: un documento Markdown que describe el problema, la solución propuesta y los criterios de aceptación. Las specs se aprueban **antes** de implementar.
 
+> 🧭 **Antes de la primera spec, define el norte en [`docs/VISION.md`](../VISION.md).** Toda spec debe poder justificarse contra la visión (objetivos, no-objetivos, principios). El comando `/spec` lo exige: si la visión no está rellenada, te derivará a `/vision`. Cada spec declara en su frontmatter (`vision_refs`) y en su sección "Alineación con la visión" qué objetivo(s) del norte avanza.
+
 ## Convenciones
 
 - **Nombre**: `NNNN-slug-corto.md` donde `NNNN` es un número secuencial de 4 dígitos.
@@ -12,6 +14,8 @@ Cada cambio significativo del proyecto empieza con una **spec**: un documento Ma
 ## Ciclo de vida
 
 ```
+  (VISION.md como norte de fondo)
+       │
 ┌─────────┐     /spec    ┌───────────┐   revisión    ┌──────────┐  /implement-spec  ┌─────────────┐
 │  idea   │  ─────────▶  │   Draft   │  ──────────▶  │ Approved │  ──────────────▶  │ Implemented │
 └─────────┘              └───────────┘               └──────────┘                   └─────────────┘

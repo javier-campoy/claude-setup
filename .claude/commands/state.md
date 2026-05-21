@@ -23,7 +23,7 @@ Regenera `docs/STATE.md` y los ficheros `docs/modules/*.md` para reflejar el est
    - Fecha: `date +%Y-%m-%d`.
 
 3. **Reescribe `docs/STATE.md`**:
-   - **Sección 1 (Visión general)**: PRESERVAR la versión humana. Solo cambia si hay cambios estructurales obvios.
+   - **Sección 1 (Visión general)**: resumen corto del presente (qué es el repo HOY) + enlace a `docs/VISION.md` como fuente autoritativa de la dirección a futuro. PRESERVAR la versión humana; no dupliques el contenido de la visión aquí, solo apunta a ella.
    - **Sección 2 (Arquitectura y módulos)**: REGENERAR con la estructura real de `src/`. Para cada módulo, infiere su responsabilidad del docstring del `__init__.py` o del módulo. Si no hay docstring, marca `_[describir]_`. Incluye enlace a `docs/modules/<nombre>.md` si existe.
    - **Sección 3 (Stack y dependencias)**: leer `pyproject.toml`, listar deps de runtime y dev/docs.
    - **Sección 4 (ADRs inline)**: PRESERVAR. NUNCA borres ADRs existentes. Solo añade nuevas si has tomado decisiones técnicas relevantes en este turno (raro).
@@ -73,6 +73,7 @@ Para cada fichero de módulo:
 
 ## Reglas
 
+- **NUNCA toques `docs/VISION.md`**. La visión es prescriptiva y de propiedad humana; se edita con `/vision`, no con `/state`. `/state` solo la lee para mantener alineada la sección 1 de STATE.md. Si detectas que el código contradice el norte, NO edites la visión: márcalo con `<!-- TODO: posible desalineación con VISION.md: ... -->` y avisa al usuario.
 - **NUNCA borres ADRs**. Son histórico, solo se añaden.
 - **NUNCA cambies decisiones de diseño** ya documentadas; si crees que hay que cambiarlas, abre una spec nueva.
 - **PRESERVA** la sección `## Visión general` de cada `docs/modules/*.md`.

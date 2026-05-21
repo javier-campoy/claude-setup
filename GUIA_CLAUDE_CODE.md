@@ -12,7 +12,7 @@ Esta guía explica qué hace cada fichero del kit y cómo desplegarlo en tu proy
 | `.claude/settings.json` | Permisos del agente (allow / ask / deny) y definición de hooks. |
 | `.claude/hooks/post-tool-use.sh` | Hook PostToolUse: auto-format con ruff + marcado de flags para doc-sync. |
 | `.claude/hooks/pre-stop.sh` | Hook Stop: bloquea la sesión si hay cambios en `src/` sin actualizar docs. |
-| `.claude/commands/*.md` | Comandos slash personalizados: `/test`, `/lint`, `/commit`, `/review`, `/refactor`, `/audit`, `/docs`, `/spec`, `/state`, `/changelog`, `/implement-spec`, `/release`. |
+| `.claude/commands/*.md` | Comandos slash personalizados: `/test`, `/lint`, `/commit`, `/review`, `/refactor`, `/audit`, `/docs`, `/vision`, `/spec`, `/state`, `/changelog`, `/implement-spec`, `/release`. |
 | `.claude/agents/*.md` | Subagentes especializados: `code-reviewer`, `test-writer`, `docs-maintainer`, `refactorer`. |
 | `.mcp.json` | Configuración de servidores MCP (GitHub, context7, filesystem) — todos desactivados por defecto. |
 | `.github/workflows/ci.yml` | CI: lint + type-check + tests en cada push/PR a main. |
@@ -23,6 +23,7 @@ Esta guía explica qué hace cada fichero del kit y cómo desplegarlo en tu proy
 | `.python-version` | Pinnea Python 3.12. |
 | `.pre-commit-config.yaml` | Hooks de pre-commit: ruff, mypy, gitleaks, conventional-commits, protect-main, docs-sync, quality-gate. |
 | `docs/index.md` | Mapa de la documentación. |
+| `docs/VISION.md` | El norte del proyecto: dirección a futuro (objetivos, no-objetivos, principios, temas estratégicos). Humano, evoluciona con `/vision`. Se construye antes de la primera spec. |
 | `docs/STATE.md` | Estado actual del repo: arquitectura, stack, ADRs, specs. Lo mantiene Claude. |
 | `docs/changelog.md` | Historial cronológico (Keep a Changelog). |
 | `docs/specs/` | Specs spec-driven: `README.md`, `_template.md` y una `NNNN-slug.md` por cambio. |
@@ -86,6 +87,7 @@ mi-proyecto/
 │   └── __init__.py
 ├── docs/
 │   ├── index.md
+│   ├── VISION.md
 │   ├── STATE.md
 │   ├── changelog.md
 │   └── specs/
@@ -110,6 +112,7 @@ mi-proyecto/
     │   ├── refactor.md
     │   ├── audit.md
     │   ├── docs.md
+    │   ├── vision.md
     │   ├── spec.md
     │   ├── state.md
     │   ├── changelog.md
@@ -164,7 +167,8 @@ Dentro de la sesión de `claude`, escribe `/` y verás los comandos disponibles:
 | `/refactor <fichero>` | Refactoriza un fichero respetando convenciones. Verifica con tests al terminar. |
 | `/audit [ámbito]` | Auditoría arquitectónica del codebase. Compara contra `STATE.md` y ADRs vía subagente `refactorer`. Propone refactors priorizados, no aplica nada sin confirmación. |
 | `/docs <fichero>` | Añade o mejora docstrings (estilo Google) en un fichero concreto. |
-| `/spec <descripción>` | Crea una nueva spec en `docs/specs/NNNN-slug.md` con estado `Draft`. Tú la apruebas. |
+| `/vision [descripción]` | Crea o evoluciona `docs/VISION.md`, el norte del proyecto. Úsalo una vez antes de la primera spec; luego cuando cambie la dirección. Registra cada cambio en el historial de revisiones. |
+| `/spec <descripción>` | Crea una nueva spec en `docs/specs/NNNN-slug.md` con estado `Draft`. Exige que la visión esté rellenada; si no, te deriva a `/vision`. Tú la apruebas. |
 | `/state` | Regenera `docs/STATE.md` con la estructura, stack, métricas y specs actuales. Preserva ADRs y contenido humano. |
 | `/changelog [rango]` | Añade entradas al `docs/changelog.md` para los cambios recientes. |
 | `/implement-spec <ruta>` | Implementa una spec aprobada paso a paso. Marca como Implemented y actualiza docs al terminar. |
@@ -229,11 +233,12 @@ Ajústalo a tu nivel de comodidad. Lo más habitual: añadir más cosas a `allow
 
 ### Cómo está montado
 
-La documentación NO es un sitio web. Son ficheros Markdown plano dentro de `docs/`, leídos directamente desde el editor o GitHub. Tres tipos de contenido:
+La documentación NO es un sitio web. Son ficheros Markdown plano dentro de `docs/`, leídos directamente desde el editor o GitHub. Cuatro tipos de contenido:
 
 ```
 docs/
 ├── index.md         # Mapa de la documentación
+├── VISION.md        # El norte del proyecto (dirección a futuro, humano)
 ├── STATE.md         # Estado actual del repo (auto-actualizado por Claude)
 ├── changelog.md     # Historial cronológico (Keep a Changelog)
 └── specs/
@@ -241,6 +246,20 @@ docs/
     ├── _template.md         # Plantilla para nuevas specs
     └── NNNN-slug.md         # Specs individuales con frontmatter
 ```
+
+### VISION.md: el norte (vs STATE.md: el presente)
+
+`docs/VISION.md` y `docs/STATE.md` son complementarios y conviene no confundirlos:
+
+| | `VISION.md` | `STATE.md` |
+|---|---|---|
+| **Pregunta** | ¿A dónde vamos? | ¿Dónde estamos ahora? |
+| **Naturaleza** | Prescriptivo, direccional | Descriptivo, foto del presente |
+| **Propiedad** | Humana (Claude ayuda con `/vision`) | Claude (regenera con `/state` y hooks) |
+| **Estabilidad** | Estable, cambia poco y a propósito | Volátil, cambia con cada cambio de `src/` |
+| **Contenido** | Propósito, objetivos, no-objetivos, principios, temas estratégicos | Arquitectura, módulos, stack, ADRs, specs, métricas |
+
+La visión **se construye antes de la primera spec** (`/vision "describe tu proyecto"`) y **evoluciona deliberadamente**: cuando cambia el rumbo, `/vision` ajusta las secciones afectadas y registra una entrada en su Historial de revisiones (nunca se borra histórico). Es el nexo que specs, sprints y decisiones técnicas toman de referencia. `/spec` la exige rellenada; cada spec declara qué objetivo del norte avanza (`vision_refs` + sección "Alineación con la visión"). `/state` **nunca** la toca.
 
 ### STATE.md: el estado vivo
 
@@ -299,7 +318,10 @@ Y diez secciones (resumen, motivación, propuesta, alternativas, plan de impleme
 ### Comandos clave
 
 ```bash
-# Crear una spec nueva
+# Definir o evolucionar el norte del proyecto (antes de la primera spec)
+/vision "describe tu proyecto: problema, usuarios, objetivos, qué NO hará"
+
+# Crear una spec nueva (exige que la visión esté rellenada)
 /spec "quiero un parser de URLs con validación estricta"
 
 # (revisas el draft, lo apruebas: cambias status a Approved en el frontmatter)
@@ -358,12 +380,23 @@ Dentro de cualquier `CLAUDE.md` puedes hacer `@otro_fichero.md` para incluir otr
 
 ## 6. Flujo de trabajo recomendado
 
+### Antes de empezar: define el norte (una vez)
+
+```
+claude
+/vision "describe tu proyecto: qué problema resuelve, para quién, cómo se ve el éxito"
+# Claude crea/rellena docs/VISION.md. Revísalo, ajústalo, complétalo.
+# Es el norte: a partir de aquí, toda spec se justifica contra él.
+# Vuelve a /vision cuando cambie la dirección (queda registrado en el historial).
+```
+
 ### Para una feature nueva (flujo spec-driven)
 
 ```
 1. git checkout -b feat/nombre
 2. claude
 3. /spec "descripción de lo que quieres hacer"
+   (si la visión no está rellenada, /spec te derivará a /vision primero)
 4. (Claude crea docs/specs/NNNN-slug.md en estado Draft)
 5. Revisas, editas, ajustas — cuando estás conforme, cambias status a Approved.
 6. /implement-spec docs/specs/NNNN-slug.md

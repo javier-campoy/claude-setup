@@ -18,8 +18,9 @@ Implementa la spec indicada en $ARGUMENTS siguiendo el flujo spec-driven.
      - Si es `Approved` → continúa.
 
 2. **Contexto**:
-   - Lee `CLAUDE.md` y `docs/STATE.md`.
+   - Lee `CLAUDE.md`, `docs/VISION.md` y `docs/STATE.md`.
    - Lee specs `related` mencionadas en el frontmatter.
+   - Ten presente el norte (`docs/VISION.md`): la implementación debe avanzar los objetivos y respetar los no-objetivos y principios. Si durante la implementación detectas que la spec contradice la visión, anótalo en la sección 10 y para a discutir (no la "corrijas" en silencio).
 
 3. **Plan de ataque**:
    - Resume al usuario tu interpretación de la spec en 5-10 líneas.
@@ -51,6 +52,7 @@ Implementa la spec indicada en $ARGUMENTS siguiendo el flujo spec-driven.
      - `updated: <fecha de hoy>`
    - Mueve la fila correspondiente en `docs/STATE.md` de "Specs activas" a "Specs implementadas".
    - Añade entrada en `docs/changelog.md` bajo `[No publicado]` referenciando la spec.
+   - Por cada módulo Python creado o modificado en `src/`, actualiza (o crea) su `docs/modules/<modulo>.md` correspondiente.
    - Si se tomaron decisiones técnicas relevantes durante la implementación, propón añadir un ADR a `docs/STATE.md` sección 4 (NO lo añadas sin confirmación).
 
 8. **Commit a la rama de feature**:

@@ -7,6 +7,7 @@ updated: YYYY-MM-DD
 author: "Tu nombre o handle"
 implemented_in: ""      # commit hash o PR number cuando esté Implemented
 related: []             # IDs de otras specs relacionadas: [0001, 0003]
+vision_refs: []         # objetivos/temas de docs/VISION.md que avanza: ["O2", "T1"]
 ---
 
 # NNNN — Título corto y descriptivo
@@ -18,6 +19,12 @@ related: []             # IDs de otras specs relacionadas: [0001, 0003]
 ## 2. Motivación
 
 ¿Por qué hace falta este cambio? ¿Qué duele hoy? ¿Qué casos de uso lo motivan?
+
+### Alineación con la visión
+
+> Conecta esta spec con el norte del proyecto ([`docs/VISION.md`](../VISION.md)). ¿Qué objetivo(s) y tema(s) estratégico(s) avanza? Si no encaja con ningún objetivo, dilo: quizá la visión deba evolucionar (con `/vision`) o la spec replantearse.
+
+- **Avanza**: _(p.ej. O2 — "reducir el boilerplate", dentro del tema T1)_
 
 ## 3. Propuesta
 

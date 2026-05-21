@@ -7,6 +7,7 @@ updated: 2026-05-07
 author: "Javier"
 implemented_in: ""
 related: []
+vision_refs: ["O1"]
 ---
 
 # 0001 — Ejemplo: parser de URLs
@@ -26,6 +27,10 @@ Casos de uso:
 - Validar URLs de entrada en la CLI.
 - Extraer componentes para construir URLs derivadas.
 - Comparar URLs canonicalizadas (mismo host, mismo path normalizado).
+
+### Alineación con la visión
+
+- **Avanza**: O1 (consistencia de la API pública) dentro del tema estratégico de "robustez de entrada". Centralizar el parseo elimina las tres implementaciones divergentes actuales, en línea con el principio rector de "una sola forma de hacer cada cosa".
 
 ## 3. Propuesta
 

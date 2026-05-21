@@ -6,6 +6,7 @@ Esta carpeta contiene la documentación viva del repositorio. Está pensada para
 
 | Fichero / carpeta | Para qué sirve | Quién lo actualiza |
 |---|---|---|
+| **[VISION.md](VISION.md)** | El norte del proyecto: hacia dónde vamos y por qué (objetivos, no-objetivos, principios, temas estratégicos). Se construye **antes** de la primera spec. | Tú (o Claude con `/vision`, con confirmación). Humano, evoluciona deliberadamente. |
 | **[STATE.md](STATE.md)** | Estado actual del repo: arquitectura, módulos, stack, decisiones técnicas y specs activas. | Auto-actualizado por Claude tras cambios en `src/`. Revísalo en cada PR. |
 | **[changelog.md](changelog.md)** | Historial cronológico de cambios. Formato Keep a Changelog. | Auto-actualizado por Claude tras cambios en `src/`. |
 | **[specs/](specs/)** | Especificaciones de features/cambios. Una spec se aprueba antes de implementar. | Tú con `/spec`, luego Claude la implementa con `/implement-spec`. |
@@ -14,8 +15,12 @@ Esta carpeta contiene la documentación viva del repositorio. Está pensada para
 ## Flujo spec-driven
 
 ```
+0. /vision "describe tu proyecto"   (una vez, antes de la primera spec)
+   → Claude crea/rellena docs/VISION.md (el norte). Tú lo revisas y ajustas.
+
 1. /spec "descripción de lo que quieres"
-   → Claude crea docs/specs/NNNN-slug.md (estado: Draft)
+   → Claude verifica que la visión existe (si no, te manda a /vision)
+   → Claude crea docs/specs/NNNN-slug.md (estado: Draft), alineada con el norte
 
 2. Revisas, editas, apruebas
    → Cambias el estado de la spec a Approved
@@ -31,6 +36,7 @@ Esta carpeta contiene la documentación viva del repositorio. Está pensada para
 
 ## Reglas
 
+- **VISION.md se construye antes de la primera spec** y evoluciona deliberadamente (con `/vision`). Es el norte: toda spec debe poder justificarse contra él. No lo regenera `/state`.
 - **STATE.md, changelog.md y `modules/*.md` no se editan a mano** salvo correcciones puntuales. Los gestiona Claude.
 - **Las specs son la fuente de verdad** para cualquier cambio no trivial. Si haces algo importante sin spec, creas una spec retroactiva.
 - **Una spec por unidad de cambio**. Refactors grandes, features, cambios breaking → spec. Hotfixes triviales → directo al commit.

@@ -9,6 +9,9 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es/1.1.0/) y este
 ## [No publicado]
 
 ### Añadido
+- `docs/VISION.md`: nuevo documento vivo con el **norte del proyecto** (propósito, visión a futuro, usuarios, objetivos, no-objetivos, principios rectores, métricas, temas estratégicos, restricciones, riesgos e historial de revisiones). Prescriptivo y de propiedad humana; se construye antes de la primera spec y evoluciona deliberadamente.
+- `.claude/commands/vision.md`: comando `/vision` para crear (modo CREAR) y evolucionar (modo EVOLUCIONAR, con registro de revisión) la visión del proyecto.
+- `docs/specs/_template.md`: subsección "Alineación con la visión" en Motivación y campo de frontmatter `vision_refs` para trazar qué objetivo del norte avanza cada spec.
 - `docs/STATE.md`: sección 8 "CI/CD y versioning" con tabla de pipelines, estrategia semver e historial de releases.
 - `docs/specs/_template.md`: criterio de aceptación estándar "CI verde" en la sección 6.
 - `.github/workflows/ci.yml`: pipeline de CI con ruff check, ruff format, mypy y pytest+cobertura; se ejecuta en cada push/PR a main.
@@ -21,6 +24,12 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es/1.1.0/) y este
 - `.github/` añadido a la lista `INCLUDE` de `install.sh` para distribuirlo en el deploy.
 
 ### Cambiado
+- `.claude/commands/spec.md`: nuevo paso 0 que **bloquea `/spec` si la visión no está rellenada** (deriva a `/vision`), lee `VISION.md` como contexto y exige declarar la alineación de la spec con el norte.
+- `.claude/commands/implement-spec.md`: el contexto ahora carga `docs/VISION.md`; la implementación debe respetar objetivos, no-objetivos y principios.
+- `.claude/commands/state.md`: la sección 1 de STATE.md pasa a enlazar a `VISION.md` (sin duplicarla) y se añade la regla de **no tocar nunca `VISION.md`** desde `/state`.
+- `.claude/agents/refactorer.md` y `.claude/agents/docs-maintainer.md`: incorporan `docs/VISION.md` como norte estratégico; el refactorer detecta drift contra el norte, el docs-maintainer audita (sin reescribir) la coherencia visión ↔ código/specs.
+- `CLAUDE.md`, `GUIA_CLAUDE_CODE.md`, `docs/index.md`, `docs/specs/README.md`, `README.md`: documentado el flujo `/vision → /spec → /implement-spec`, la distinción VISION (futuro) vs STATE (presente) y la visión como nexo de specs y sprints.
+- `install.sh`: `docs/VISION.md` añadido a la sustitución de tokens y `/vision` incluido en los pasos finales antes de `/spec`.
 - `README.md`: añadida badge de CI, sección de Releases y corrección del número de subagentes (4, no 2).
 - `GUIA_CLAUDE_CODE.md`: sección 6 (flujo de trabajo) actualizada con pasos de PR, CI y release integrados; sección 8 reescrita con diagrama del flujo completo.
 - `CLAUDE.md`: nueva sección "CI/CD y releases"; sección "Git y commits" con PR workflow; regla 4 ampliada; `/release` en la lista de comandos.

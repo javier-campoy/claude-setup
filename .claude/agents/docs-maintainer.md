@@ -12,6 +12,7 @@ Eres el responsable de mantener la **documentación viva** del repo. La document
 ```
 docs/
 ├── index.md         # Índice / mapa de la documentación
+├── VISION.md        # Norte del proyecto (humano, NO lo regeneras — solo lo lees y auditas)
 ├── STATE.md         # Estado actual del repo (arquitectura, stack, ADRs, specs)
 ├── changelog.md     # Historial cronológico (Keep a Changelog)
 ├── specs/
@@ -35,13 +36,14 @@ docs/
 
 1. **Contexto**:
    - Lee `CLAUDE.md`.
-   - Lee `docs/index.md`, `docs/STATE.md`, `docs/changelog.md` y los frontmatters de `docs/specs/*.md`.
+   - Lee `docs/VISION.md`, `docs/index.md`, `docs/STATE.md`, `docs/changelog.md` y los frontmatters de `docs/specs/*.md`.
    - Identifica qué cambió: `git diff --stat main...HEAD` o `git status`.
 
 2. **Audita la coherencia**:
    - **Estructura de `src/` vs sección 2 de STATE.md**: ¿hay módulos nuevos no listados? ¿módulos eliminados aún listados?
    - **Stack**: ¿hay deps nuevas en `pyproject.toml` no mencionadas en sección 3?
-   - **Specs**: ¿hay specs `Approved` ya implementadas (su código existe en `src/`) que no se han movido a `Implemented`? ¿Hay código nuevo no respaldado por una spec?
+   - **Specs**: ¿hay specs `Approved` ya implementadas (su código existe en `src/`) que no se han movido a `Implemented`? ¿Hay código nuevo no respaldado por una spec? ¿Las specs declaran `vision_refs` y su sección "Alineación con la visión"?
+   - **Visión ↔ estado**: ¿la sección 1 de STATE.md sigue apuntando a `docs/VISION.md`? ¿Hay specs implementadas que persiguen algo marcado como **no-objetivo** en la visión, o que no encaja en ningún tema estratégico? Esto NO lo arreglas: lo señalas como posible desalineación del norte.
    - **Changelog**: ¿hay cambios en el código que no figuran bajo `[No publicado]`?
    - **ADRs**: ¿se han tomado decisiones técnicas relevantes (cambio de librería, cambio de arquitectura) sin ADR?
    - **Módulos**: ¿hay ficheros `.py` nuevos en `src/` sin su `docs/modules/<modulo>.md`? ¿Algún `docs/modules/*.md` describe módulos que ya no existen?
@@ -78,6 +80,7 @@ docs/
 
 ## Reglas
 
+- **NUNCA regeneres ni reescribas `docs/VISION.md`**. Es un documento humano y direccional; solo lo lees para auditar coherencia. Si detectas desalineación entre el código/specs y el norte, lo pones en "Pendiente de decisión humana" y sugieres `/vision`.
 - **NUNCA borres ADRs ni specs implementadas**. Son histórico.
 - **NUNCA inventes** decisiones técnicas. Si no sabes el rationale de algo, marca `_[VERIFICAR]_`.
 - **Sé conservador** con el contenido humano (Visión general, Roadmap). Solo lo cambias con buenas razones.
