@@ -10,6 +10,7 @@ Esta carpeta contiene la documentación viva del repositorio. Está pensada para
 | **[STATE.md](STATE.md)** | Estado actual del repo: arquitectura, módulos, stack, decisiones técnicas y specs activas. | Auto-actualizado por Claude tras cambios en `src/`. Revísalo en cada PR. |
 | **[changelog.md](changelog.md)** | Historial cronológico de cambios. Formato Keep a Changelog. | Auto-actualizado por Claude tras cambios en `src/`. |
 | **[specs/](specs/)** | Especificaciones de features/cambios. Una spec se aprueba antes de implementar. | Tú con `/spec`, luego Claude la implementa con `/implement-spec`. |
+| **[plans/](plans/)** | Campañas: loops autónomos `implementer`↔`crítico` sobre una spec, con criterios de "hecho", log de iteraciones y cola de escalación. | Claude con `/campaign`; tú confirmas el arranque y resuelves las escalaciones. |
 | **[modules/](modules/)** | Documentación por módulo: API pública, responsabilidad, dependencias, ejemplos. Un `.md` por cada módulo Python en `src/`. | Auto-generado por Claude con `/docs`, `/state` e `/implement-spec`. |
 
 ## Flujo spec-driven

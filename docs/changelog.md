@@ -9,6 +9,10 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es/1.1.0/) y este
 ## [No publicado]
 
 ### Añadido
+- `.claude/commands/campaign.md`: comando `/campaign`, orquestador de un **loop autónomo `spec-implementer`↔`spec-critic`** sobre una spec aprobada (v1: una spec). Resuelve los `_[VERIFICAR]_` de bajo riesgo, escala los consecuentes, registra estado en `docs/plans/` y para en checkpoints (arranque, escalación, cierre). Nunca hace merge/push sin humano.
+- `.claude/agents/spec-implementer.md` y `.claude/agents/spec-critic.md`: subagentes del loop de campaña (implementer en `sonnet`, crítico adversarial read-only en `opus`). No se invocan a mano.
+- `docs/plans/` (nuevo tipo de doc vivo): `README.md` y `_template.md` para las campañas — directriz, criterios de "hecho", log de iteraciones, cola de escalación y decisiones auto-resueltas.
+- Dos tiers de marcador en specs: `_[VERIFICAR]_` (bajo riesgo, resoluble por el loop) y `_[VERIFICAR:humano]_` (consecuente, solo humano). Documentado en `docs/specs/README.md` y `docs/specs/_template.md`.
 - `docs/VISION.md`: nuevo documento vivo con el **norte del proyecto** (propósito, visión a futuro, usuarios, objetivos, no-objetivos, principios rectores, métricas, temas estratégicos, restricciones, riesgos e historial de revisiones). Prescriptivo y de propiedad humana; se construye antes de la primera spec y evoluciona deliberadamente.
 - `.claude/commands/vision.md`: comando `/vision` para crear (modo CREAR) y evolucionar (modo EVOLUCIONAR, con registro de revisión) la visión del proyecto.
 - `docs/specs/_template.md`: subsección "Alineación con la visión" en Motivación y campo de frontmatter `vision_refs` para trazar qué objetivo del norte avanza cada spec.

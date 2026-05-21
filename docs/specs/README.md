@@ -11,6 +11,17 @@ Cada cambio significativo del proyecto empieza con una **spec**: un documento Ma
 - **Estado**: en el frontmatter de cada spec: `Draft` → `Approved` → `Implemented` (o `Rejected`).
 - **Una spec por unidad de cambio coherente**. Si tocas tres cosas no relacionadas, son tres specs.
 
+### Marcadores `_[VERIFICAR]_` (dos tiers)
+
+`/spec` siembra `_[VERIFICAR]_` allí donde no puede inferir algo con seguridad. Hay dos niveles según quién puede resolverlos:
+
+| Marcador | Significado | Quién lo resuelve |
+|---|---|---|
+| `_[VERIFICAR]_` | Detalle de bajo riesgo (no toca producto, API pública, seguridad ni dirección). | Tú al revisar la spec; o, dentro de una campaña `/campaign`, el `spec-implementer` proponiéndolo y el `spec-critic` validándolo. |
+| `_[VERIFICAR:humano]_` | Decisión consecuente (producto, breaking change, ADR, seguridad, trade-off estratégico). | **Solo tú.** Nunca lo resuelve un agente. |
+
+`/implement-spec` (manual) **bloquea ante cualquier `_[VERIFICAR]_`**: espera una spec ya aclarada. La auto-resolución tipada de los de bajo riesgo ocurre **solo** dentro de `/campaign` (ver [`docs/plans/`](../plans/)).
+
 ## Ciclo de vida
 
 ```

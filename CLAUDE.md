@@ -14,7 +14,7 @@ Proyecto Python (paquete/librería). Stack moderno basado en `uv`, `ruff` y `pyt
 - **Lint + format**: [`ruff`](https://docs.astral.sh/ruff/) (sustituye a black, isort, flake8)
 - **Type checking**: `mypy` (modo estricto)
 - **Tests**: `pytest` + `pytest-cov`
-- **Documentación viva**: ficheros Markdown en `docs/` (`VISION.md`, `STATE.md`, `changelog.md`, `specs/`, `modules/`). Sin generación de sitio. Se lee desde el editor o GitHub.
+- **Documentación viva**: ficheros Markdown en `docs/` (`VISION.md`, `STATE.md`, `changelog.md`, `specs/`, `plans/`, `modules/`). Sin generación de sitio. Se lee desde el editor o GitHub.
 - **Pre-commit**: `pre-commit` con ruff, mypy y aviso de docs viva sin sincronizar.
 
 ## Estructura del proyecto
@@ -32,6 +32,9 @@ Proyecto Python (paquete/librería). Stack moderno basado en `uv`, `ruff` y `pyt
 │   │   ├── README.md
 │   │   ├── _template.md
 │   │   └── NNNN-slug.md
+│   ├── plans/            # Campañas: loops implementer↔crítico sobre specs (/campaign)
+│   │   ├── README.md
+│   │   └── _template.md
 │   └── modules/          # Documentación por módulo (auto-generada)
 │       ├── README.md     # Índice de módulos
 │       ├── _template.md  # Plantilla
@@ -201,6 +204,8 @@ uv run pre-commit install --hook-type pre-commit --hook-type commit-msg --hook-t
 - `test-writer` — Genera tests pytest exhaustivos para código existente.
 - `docs-maintainer` — Audita coherencia código ↔ docs viva. Úsalo cuando sospeches que `STATE.md`, `changelog.md`, las specs o los `modules/*.md` no reflejan la realidad del código.
 - `refactorer` — Mantiene el repo coherente con el norte de `docs/VISION.md` y la arquitectura/ADRs de `docs/STATE.md`. Detecta drift respecto al norte, drift arquitectónico, deuda estructural, duplicación e inconsistencias. Propone refactors priorizados; aplica los pequeños tras confirmación, sugiere `/spec` para los grandes.
+- `spec-implementer` — Implementa una ronda de una spec dentro de una campaña `/campaign`: resuelve los `_[VERIFICAR]_` de bajo riesgo, escala los de humano y corre el gate. **No lo invoques a mano**: lo orquesta `/campaign`.
+- `spec-critic` — Crítico adversarial (read-only) de una ronda de campaña: veredicto `APROBAR`/`REVISAR`/`ESCALAR`. **No lo invoques a mano**: lo orquesta `/campaign`.
 
 Invócalos con: `Use the code-reviewer subagent to review my recent changes`.
 
@@ -217,7 +222,8 @@ Invócalos con: `Use the code-reviewer subagent to review my recent changes`.
 - `/spec <descripción>` — Crea una nueva spec en `docs/specs/` (estado Draft). Exige que la visión esté rellenada.
 - `/state` — Regenera `docs/STATE.md` con la estructura, stack, métricas y specs actuales, y sincroniza los `docs/modules/*.md`.
 - `/changelog [rango]` — Añade entradas al `docs/changelog.md` para los cambios recientes.
-- `/implement-spec <ruta>` — Implementa una spec aprobada paso a paso, actualizando docs (STATE.md, changelog, modules/), haciendo commit y push al terminar.
+- `/implement-spec <ruta>` — Implementa una spec aprobada paso a paso, actualizando docs (STATE.md, changelog, modules/), haciendo commit y push al terminar. Bloquea si quedan `_[VERIFICAR]_`.
+- `/campaign <spec|plan>` — Orquesta un loop autónomo `spec-implementer`↔`spec-critic` sobre una spec aprobada hasta cumplir sus criterios. Resuelve los `_[VERIFICAR]_` de bajo riesgo y escala los consecuentes. Estado en `docs/plans/` (v1: una spec).
 - `/release <versión>` — Prepara y publica una nueva versión: bump en `pyproject.toml`, actualiza changelog, crea tag `vX.Y.Z` y hace push (el workflow de GitHub Actions crea el Release).
 
 ## Notas y decisiones de diseño

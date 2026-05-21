@@ -12,6 +12,13 @@ vision_refs: []         # objetivos/temas de docs/VISION.md que avanza: ["O2", "
 
 # NNNN — Título corto y descriptivo
 
+<!--
+Marcadores de huecos por resolver (dos tiers):
+  _[VERIFICAR]_         → bajo riesgo; lo resuelves tú o el loop /campaign (implementer + crítico).
+  _[VERIFICAR:humano]_  → consecuente (producto/API/seguridad/ADR); SOLO humano, nunca un agente.
+Ver docs/specs/README.md → "Marcadores".
+-->
+
 ## 1. Resumen
 
 > 2-4 frases. ¿Qué problema resolvemos y cómo? Si alguien lee solo este apartado debería entender la spec entera.

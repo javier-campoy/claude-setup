@@ -12,8 +12,8 @@ Esta guía explica qué hace cada fichero del kit y cómo desplegarlo en tu proy
 | `.claude/settings.json` | Permisos del agente (allow / ask / deny) y definición de hooks. |
 | `.claude/hooks/post-tool-use.sh` | Hook PostToolUse: auto-format con ruff + marcado de flags para doc-sync. |
 | `.claude/hooks/pre-stop.sh` | Hook Stop: bloquea la sesión si hay cambios en `src/` sin actualizar docs. |
-| `.claude/commands/*.md` | Comandos slash personalizados: `/test`, `/lint`, `/commit`, `/review`, `/refactor`, `/audit`, `/docs`, `/vision`, `/spec`, `/state`, `/changelog`, `/implement-spec`, `/release`. |
-| `.claude/agents/*.md` | Subagentes especializados: `code-reviewer`, `test-writer`, `docs-maintainer`, `refactorer`. |
+| `.claude/commands/*.md` | Comandos slash personalizados: `/test`, `/lint`, `/commit`, `/review`, `/refactor`, `/audit`, `/docs`, `/vision`, `/spec`, `/state`, `/changelog`, `/implement-spec`, `/campaign`, `/release`. |
+| `.claude/agents/*.md` | Subagentes especializados: `code-reviewer`, `test-writer`, `docs-maintainer`, `refactorer`, `spec-implementer`, `spec-critic`. |
 | `.mcp.json` | Configuración de servidores MCP (GitHub, context7, filesystem) — todos desactivados por defecto. |
 | `.github/workflows/ci.yml` | CI: lint + type-check + tests en cada push/PR a main. |
 | `.github/workflows/release.yml` | Release automático al hacer push de un tag `v*.*.*`. |
@@ -23,6 +23,7 @@ Esta guía explica qué hace cada fichero del kit y cómo desplegarlo en tu proy
 | `.python-version` | Pinnea Python 3.12. |
 | `.pre-commit-config.yaml` | Hooks de pre-commit: ruff, mypy, gitleaks, conventional-commits, protect-main, docs-sync, quality-gate. |
 | `docs/index.md` | Mapa de la documentación. |
+| `docs/plans/` | Campañas: estado de los loops `implementer`↔`crítico` sobre specs (`/campaign`). `README.md`, `_template.md` y una `NNNN-slug.md` por campaña. |
 | `docs/VISION.md` | El norte del proyecto: dirección a futuro (objetivos, no-objetivos, principios, temas estratégicos). Humano, evoluciona con `/vision`. Se construye antes de la primera spec. |
 | `docs/STATE.md` | Estado actual del repo: arquitectura, stack, ADRs, specs. Lo mantiene Claude. |
 | `docs/changelog.md` | Historial cronológico (Keep a Changelog). |
@@ -171,7 +172,8 @@ Dentro de la sesión de `claude`, escribe `/` y verás los comandos disponibles:
 | `/spec <descripción>` | Crea una nueva spec en `docs/specs/NNNN-slug.md` con estado `Draft`. Exige que la visión esté rellenada; si no, te deriva a `/vision`. Tú la apruebas. |
 | `/state` | Regenera `docs/STATE.md` con la estructura, stack, métricas y specs actuales. Preserva ADRs y contenido humano. |
 | `/changelog [rango]` | Añade entradas al `docs/changelog.md` para los cambios recientes. |
-| `/implement-spec <ruta>` | Implementa una spec aprobada paso a paso. Marca como Implemented y actualiza docs al terminar. |
+| `/implement-spec <ruta>` | Implementa una spec aprobada paso a paso. Marca como Implemented y actualiza docs al terminar. Bloquea si quedan `_[VERIFICAR]_`. |
+| `/campaign <spec\|plan>` | Orquesta un loop autónomo `spec-implementer`↔`spec-critic` sobre una spec hasta cumplir sus criterios. Resuelve los `_[VERIFICAR]_` de bajo riesgo, escala los consecuentes. Estado en `docs/plans/`. v1: una spec. |
 | `/release <versión>` | Prepara y publica una nueva versión: bump, changelog, tag `vX.Y.Z` y push. GitHub Actions crea el Release. |
 
 ### Subagentes
@@ -195,6 +197,8 @@ Use the refactorer subagent to audit src/parser/ for drift against STATE.md.
 ```
 
 Los subagentes corren en su propio contexto, así que no contaminan el contexto principal con todos los ficheros que leen. Útil para tareas grandes y aisladas.
+
+> `spec-implementer` y `spec-critic` son una excepción: **no se invocan a mano**. Los orquesta `/campaign` (ver sección 4). Si los llamas directamente les faltará el contexto del plan de campaña.
 
 ### Hooks automáticos
 
@@ -357,6 +361,34 @@ El resultado: tras cualquier sesión que toque `src/`, las docs viva quedan sinc
 - **STATE.md y changelog.md no se editan a mano** salvo correcciones. Los gestiona Claude.
 - **NUNCA borres ADRs** ni specs implementadas. Son histórico.
 - **Hotfixes triviales** (typos, format, errores obvios de 1-2 líneas) pueden saltarse el flujo spec.
+
+### Campañas: el loop autónomo (`/campaign`)
+
+Una **campaña** automatiza la *ejecución* de una spec con dos agentes que se turnan, para aclarar de forma razonable los huecos sin tenerte vigilando cada paso — pero **parando ante cualquier decisión consecuente**.
+
+```
+/campaign docs/specs/0002-mi-spec.md
+   │
+   ├─ [checkpoint] propone criterios de "hecho" + rama + caps → confirmas
+   │
+   └─ ronda r:
+        spec-implementer (sonnet) → implementa, resuelve _[VERIFICAR]_ seguros, corre el gate
+        spec-critic      (opus)   → APROBAR / REVISAR / ESCALAR
+            APROBAR → commit en la rama, spec Implemented, fin
+            REVISAR → otra ronda con el feedback (hasta el cap)
+            ESCALAR → pausa y te pregunta la decisión concreta
+```
+
+Claves:
+
+- **Dos tiers de `_[VERIFICAR]_`**: los de bajo riesgo los resuelve el loop (con razonamiento registrado en `docs/plans/`); los `_[VERIFICAR:humano]_` (producto, breaking, ADR, seguridad) **siempre escalan**.
+- **El gate (`ruff`+`mypy`+`pytest`) es la verdad de terreno**: el crítico no aprueba con tests en rojo.
+- **Implementer y crítico usan modelos distintos** (sonnet/opus) para que la crítica no sea un sello automático.
+- **Guardarraíles**: caps de rondas, rama por campaña, y **nunca** merge ni push sin ti.
+- **Estado durable** en `docs/plans/NNNN-slug.md`: directriz, criterios de "hecho", log de iteraciones, cola de escalación y decisiones auto-resueltas (auditable en el PR).
+- **v1** trabaja sobre **una** spec; el v2 (secuencia multi-spec anclada a un objetivo de visión) está por construir.
+
+Ver [`docs/plans/README.md`](#) para el detalle.
 
 ---
 
