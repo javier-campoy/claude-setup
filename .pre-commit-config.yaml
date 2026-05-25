@@ -62,7 +62,7 @@ repos:
       # -----------------------------------------------------------------------
       - id: protect-main-branch
         name: proteger rama main
-        entry: bash -c 'BRANCH=$(git branch --show-current); if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "master" ]; then echo ""; echo "ERROR: commits directos a \"$BRANCH\" no están permitidos."; echo "  Crea una rama: git checkout -b feat/<nombre>"; echo ""; exit 1; fi'
+        entry: bash .claude/hooks/protect-main-branch.sh
         language: system
         pass_filenames: false
         stages: [pre-commit]
@@ -73,7 +73,20 @@ repos:
       # -----------------------------------------------------------------------
       - id: docs-sync-check
         name: docs viva sincronizada
-        entry: bash -c 'STAGED=$(git diff --cached --name-only); SRC=$(echo "$STAGED" | grep -E "^src/.*\.py$" | head -1); DOCS=$(echo "$STAGED" | grep -E "^docs/(STATE|changelog|specs/.*)\.md$" | head -1); if [ -n "$SRC" ] && [ -z "$DOCS" ]; then echo ""; echo "ERROR: hay cambios en src/ sin actualizar docs/."; echo "  Ejecuta /state y /changelog antes de commitear."; echo ""; exit 1; fi'
+        entry: bash .claude/hooks/docs-sync-check.sh
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+      # -----------------------------------------------------------------------
+      # Cobertura de documentación: BLOQUEA si el código staged no está
+      # documentado (docstrings públicos, docs/modules/<modulo>.md y la sección
+      # [No publicado] del changelog). Backstop determinista de la auditoría que
+      # la skill /commit hace (y auto-remedia) antes de llegar aquí.
+      # -----------------------------------------------------------------------
+      - id: doc-coverage
+        name: cobertura de documentación
+        entry: uv run python .claude/hooks/check_doc_coverage.py --staged
         language: system
         pass_filenames: false
         stages: [pre-commit]
@@ -85,7 +98,7 @@ repos:
       # -----------------------------------------------------------------------
       - id: conventional-commits
         name: conventional commits
-        entry: bash -c 'MSG=$(head -1 "$1"); if echo "$MSG" | grep -qE "^(Merge |Revert |Initial commit)"; then exit 0; fi; if ! echo "$MSG" | grep -qE "^(feat|fix|docs|refactor|test|chore|perf|ci|build|revert)(\(.+\))?(!)?: .{1,72}"; then echo ""; echo "ERROR: el mensaje de commit no sigue Conventional Commits."; echo "  Formato : <tipo>[(<scope>)][!]: <resumen>  (max 72 chars)"; echo "  Tipos   : feat fix docs refactor test chore perf ci build revert"; echo "  Ejemplo : feat(auth): añadir soporte para login social"; echo ""; exit 1; fi' _
+        entry: bash .claude/hooks/conventional-commits.sh
         language: system
         stages: [commit-msg]
 
@@ -95,7 +108,7 @@ repos:
       # -----------------------------------------------------------------------
       - id: pre-push-quality-gate
         name: gate de calidad (pre-push)
-        entry: bash -c 'echo ""; echo "▶ Gate de calidad pre-push..."; uv run ruff check . || { echo "  ruff FALLÓ"; exit 1; }; uv run mypy src || { echo "  mypy FALLÓ"; exit 1; }; uv run pytest -q || { echo "  pytest FALLÓ"; exit 1; }; echo "✓ Gate superado."; echo ""'
+        entry: bash .claude/hooks/pre-push-quality-gate.sh
         language: system
         pass_filenames: false
         stages: [pre-push]

@@ -21,7 +21,7 @@ Esta guía explica qué hace cada fichero del kit y cómo desplegarlo en tu proy
 | `pyproject.toml` | Config completa de Python: deps, ruff, mypy estricto, pytest, coverage. |
 | `.gitignore` | Ignora cachés, venvs, secrets, `.claude/.cache/` y ficheros locales de Claude. |
 | `.python-version` | Pinnea Python 3.12. |
-| `.pre-commit-config.yaml` | Hooks de pre-commit: ruff, mypy, gitleaks, conventional-commits, protect-main, docs-sync, quality-gate. |
+| `.pre-commit-config.yaml` | Hooks de pre-commit: ruff, mypy, gitleaks, conventional-commits, protect-main, docs-sync, doc-coverage, quality-gate. |
 | `docs/index.md` | Mapa de la documentación. |
 | `docs/VISION.md` | El norte del proyecto: dirección a futuro (objetivos, no-objetivos, principios, temas estratégicos). Humano, evoluciona con `/vision`. Se construye antes de la primera spec. |
 | `docs/STATE.md` | Estado actual del repo: arquitectura, stack, ADRs, specs. Lo mantiene Claude. |
@@ -163,7 +163,7 @@ Dentro de la sesión de `claude`, escribe `/` y verás los comandos disponibles:
 | `/test [args]` | Ejecuta pytest. Sin args, corre la suite con cobertura. Con args (`/test tests/test_foo.py::test_bar`), corre solo eso. |
 | `/lint` | Ejecuta `ruff format`, `ruff check --fix` y `mypy`. Reporta lo que no se ha podido auto-arreglar. |
 | `/review [rama-base]` | Hace una revisión de los cambios pendientes contra la rama base (default: `main`). |
-| `/commit [tipo]` | Genera un commit message siguiendo Conventional Commits a partir del diff actual. Pasa por gate de calidad antes. |
+| `/commit [tipo]` | Genera un commit message siguiendo Conventional Commits a partir del diff actual. Antes corre el gate de calidad (ruff + pytest) y la auditoría de cobertura de documentación, auto-remediando docstrings y `docs/modules/` que falten. |
 | `/refactor <fichero>` | Refactoriza un fichero respetando convenciones. Verifica con tests al terminar. |
 | `/audit [ámbito]` | Auditoría arquitectónica del codebase. Compara contra `STATE.md` y ADRs vía subagente `refactorer`. Propone refactors priorizados, no aplica nada sin confirmación. |
 | `/docs <fichero>` | Añade o mejora docstrings (estilo Google) en un fichero concreto. |
@@ -341,12 +341,13 @@ Use the docs-maintainer subagent to audit code/docs coherence.
 
 ### Auto-actualización: cómo se mantiene viva
 
-Cuatro mecanismos colaboran:
+Cinco mecanismos colaboran:
 
 1. **Hook `PostToolUse`**: cuando Claude edita un `.py` bajo `src/`, marca `.claude/.cache/src-changed.flag`.
 2. **Hook `PostToolUse`**: cuando Claude edita `docs/STATE.md`, `docs/changelog.md` o `docs/specs/*.md`, marca `.claude/.cache/docs-touched.flag`.
 3. **Hook `Stop`**: si hay flag de src/ pero NO flag de docs/, **bloquea con `exit 2`** y obliga a Claude a continuar y actualizar docs antes de terminar.
-4. **Pre-commit hook**: WARNING si commiteas cambios en `src/` sin tocar `docs/`. No bloquea.
+4. **Pre-commit `docs-sync-check`**: bloquea el commit si tocas `src/` sin actualizar ningún `docs/` (heurística de presencia).
+5. **Pre-commit `doc-coverage`** (`.claude/hooks/check_doc_coverage.py`): bloquea el commit si el código staged no está realmente documentado — docstrings públicos, su `docs/modules/<modulo>.md` y la sección `[No publicado]` del changelog (verificación de contenido). La skill `/commit` corre este mismo gate antes y auto-remedia los huecos.
 
 El resultado: tras cualquier sesión que toque `src/`, las docs viva quedan sincronizadas. No tienes que acordarte.
 

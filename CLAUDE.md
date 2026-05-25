@@ -164,7 +164,10 @@ Los hooks están en `.claude/hooks/` y configurados en `.claude/settings.json`:
 2. **Tras editar `.py` bajo `src/`** → marca `.claude/.cache/src-changed.flag`.
 3. **Tras editar `docs/STATE.md`, `docs/changelog.md` o `docs/specs/*.md`** → marca `.claude/.cache/docs-touched.flag`.
 4. **Al terminar la respuesta (`Stop` hook)**: si hay flag de src/ pero no de docs/, **bloquea con `exit 2`** y obliga a Claude a actualizar docs antes de cerrar la sesión.
-5. **Pre-commit `docs-sync-check`**: si commiteas cambios en `src/` sin tocar `docs/`, **bloquea el commit** (exit 1).
+5. **Pre-commit `docs-sync-check`**: si commiteas cambios en `src/` sin tocar `docs/`, **bloquea el commit** (exit 1). Es una heurística de *presencia* (¿se tocó algún doc?).
+6. **Cobertura de documentación** (`.claude/hooks/check_doc_coverage.py`): gate determinista que comprueba *contenido*, no solo presencia. Sobre los `src/*.py` que vas a commitear verifica que (a) toda función/clase/método público tenga docstring, (b) cada módulo con API pública tenga su `docs/modules/<modulo>.md`, y (c) la sección `[No publicado]` del changelog tenga entradas. Lo usan dos capas:
+   - La skill `/commit`, que lo ejecuta y **auto-remedia** los huecos (vía `/docs` y `/changelog`) antes de commitear.
+   - El hook `pre-commit doc-coverage`, que es el backstop determinista para `git commit` manual (bloquea con exit 1).
 
 ### Hooks de control de versiones (pre-commit, commit-msg, pre-push)
 
@@ -176,7 +179,8 @@ uv run pre-commit install --hook-type pre-commit --hook-type commit-msg --hook-t
 | Hook | Cuándo | Qué hace |
 |---|---|---|
 | `protect-main-branch` | pre-commit | Bloquea commits directos a `main`/`master`. Usa ramas `feat/...`, `fix/...`. |
-| `docs-sync-check` | pre-commit | Bloquea si hay cambios en `src/` sin actualizar `docs/`. |
+| `docs-sync-check` | pre-commit | Bloquea si hay cambios en `src/` sin actualizar `docs/` (presencia). |
+| `doc-coverage` | pre-commit | Bloquea si el código staged no está documentado: docstrings públicos, `docs/modules/<modulo>.md` y changelog `[No publicado]` (contenido). |
 | `gitleaks` | pre-commit | Escanea secrets: tokens, API keys, connection strings, etc. |
 | `conventional-commits` | commit-msg | Valida que el mensaje siga el formato `<tipo>[(<scope>)]: <resumen>`. |
 | `pre-push-quality-gate` | pre-push | Ejecuta `ruff check` + `mypy src` + `pytest` antes de subir al remoto. |
@@ -209,7 +213,7 @@ Invócalos con: `Use the code-reviewer subagent to review my recent changes`.
 - `/test` — Ejecuta la suite de tests con cobertura.
 - `/lint` — Ejecuta ruff y mypy y arregla lo que pueda.
 - `/review` — Lanza una revisión de los cambios pendientes.
-- `/commit` — Crea un commit siguiendo Conventional Commits a partir del diff.
+- `/commit` — Crea un commit siguiendo Conventional Commits a partir del diff. Antes de commitear corre el gate de calidad (ruff + pytest) y la auditoría de cobertura de documentación, auto-remediando docstrings y `docs/modules/` que falten.
 - `/refactor` — Refactoriza un fichero respetando las convenciones del proyecto.
 - `/audit [ámbito]` — Auditoría arquitectónica vía subagente `refactorer`. Compara contra `docs/STATE.md` y los ADRs, propone refactors priorizados.
 - `/docs` — Genera/actualiza docstrings en un fichero concreto y sincroniza el `docs/modules/<modulo>.md` correspondiente.

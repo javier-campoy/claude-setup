@@ -90,6 +90,10 @@ ignore = [
     "ARG",     # fixtures pueden no usarse explícitamente
 ]
 "__init__.py" = ["F401"]
+".claude/hooks/**/*.py" = [
+    "S603", # subprocess con entrada controlada (llamamos a git por nombre)
+    "S607", # ejecutable por ruta parcial: 'git' es portable y deliberado
+]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
