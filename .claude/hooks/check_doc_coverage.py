@@ -8,13 +8,18 @@ Es la Capa 1 de la auditoría de docs: la invocan tanto la skill `/commit`
 (backstop para `git commit` manual sin Claude). Comparten este único script
 para tener una sola definición de "qué es estar documentado".
 
-Tres comprobaciones:
+Cuatro comprobaciones:
 
 1. Docstrings: toda función/clase/método público (sin `_` prefijo o listado
    en `__all__`) debe tener docstring.
 2. docs/modules/: todo módulo con API pública debe tener su
    `docs/modules/<modulo>.md` (mapeo espejo de CLAUDE.md).
-3. changelog: si se tocan módulos de `src/`, la sección `[No publicado]` del
+3. STATE.md: todo módulo con API pública debe estar referenciado en
+   `docs/STATE.md` (mapa de arquitectura). Captura el drift estructural —un
+   módulo nuevo o renombrado que no llega al estado del repo— que las otras
+   comprobaciones no ven. No verifica frescura semántica del resto de STATE.md;
+   eso queda para el criterio de `/state` y del subagente `docs-maintainer`.
+4. changelog: si se tocan módulos de `src/`, la sección `[No publicado]` del
    changelog debe tener al menos una entrada.
 
 Sale con código 0 si todo está cubierto, 1 si hay huecos. Hace no-op (0) si no
@@ -38,6 +43,7 @@ from pathlib import Path
 SRC_ROOT = Path("src")
 MODULES_DOC_ROOT = Path("docs/modules")
 CHANGELOG = Path("docs/changelog.md")
+STATE_DOC = Path("docs/STATE.md")
 
 # Decoradores que eximen a una función de necesitar docstring propio.
 # `overload` declara firmas (la implementación lleva el docstring); los setters
@@ -169,6 +175,26 @@ def _check_module_doc(py_path: Path, tree: ast.Module, exported: set[str]) -> li
     return [Gap("module_doc", str(py_path), f"falta {doc}")]
 
 
+def _check_state_reference(
+    py_path: Path, tree: ast.Module, exported: set[str], state_text: str
+) -> list[Gap]:
+    """Verifica que docs/STATE.md referencie el módulo (mapa de arquitectura).
+
+    Busca el módulo por su link `modules/<mod>.md` o por su nombre punteado
+    (p. ej. `foo`, `sub.bar`). Es una heurística de *presencia* de la referencia,
+    no de frescura del resto de la entrada: detecta el caso clave —un módulo con
+    API pública que nunca llegó a STATE.md— sin bloquear refactors internos.
+    """
+    if not _has_public_api(tree, exported):
+        return []
+    doc = module_doc_path(py_path)
+    if doc is None:
+        return []
+    if f"modules/{doc.name}" in state_text or doc.stem in state_text:
+        return []
+    return [Gap("state", str(py_path), f"docs/STATE.md no referencia el módulo `{doc.stem}`")]
+
+
 def _unreleased_has_entries() -> bool:
     """Indica si la sección `[No publicado]` del changelog tiene alguna entrada."""
     if not CHANGELOG.exists():
@@ -228,10 +254,11 @@ def _report(gaps: list[Gap], n_modules: int) -> int:
     titles = {
         "docstring": "Docstrings faltantes",
         "module_doc": "docs/modules/ faltantes",
+        "state": "docs/STATE.md desactualizado",
         "changelog": "Changelog",
     }
     print(f"\n❌ Cobertura de documentación incompleta ({len(gaps)} problema(s)).\n")
-    for kind in ("docstring", "module_doc", "changelog"):
+    for kind in ("docstring", "module_doc", "state", "changelog"):
         items = by_kind.get(kind)
         if not items:
             continue
@@ -241,6 +268,7 @@ def _report(gaps: list[Gap], n_modules: int) -> int:
         print()
     print("Soluciónalo con:")
     print("  /docs <fichero>   docstrings + docs/modules/<modulo>.md")
+    print("  /state            sincronizar docs/STATE.md (módulos/arquitectura)")
     print("  /changelog        rellenar la sección [No publicado]")
     print()
     return 1
@@ -262,6 +290,8 @@ def main(argv: list[str] | None = None) -> int:
     if not targets:
         return 0  # nada relevante (p. ej. --staged sin src/ en stage)
 
+    state_text = STATE_DOC.read_text(encoding="utf-8") if STATE_DOC.exists() else ""
+
     gaps: list[Gap] = []
     for path in targets:
         try:
@@ -272,6 +302,7 @@ def main(argv: list[str] | None = None) -> int:
         exported = _exported_names(tree)
         gaps.extend(_check_docstrings(path, tree, exported))
         gaps.extend(_check_module_doc(path, tree, exported))
+        gaps.extend(_check_state_reference(path, tree, exported, state_text))
 
     if not _unreleased_has_entries():
         gaps.append(Gap("changelog", str(CHANGELOG), "la sección [No publicado] no tiene entradas"))

@@ -14,10 +14,10 @@ Pasos:
       - Si ya hay `src/*.py` en stage: `python .claude/hooks/check_doc_coverage.py --staged`.
       - Si vas a commitear cambios de `src/` aún sin stagear: pásale esas rutas como argumentos, p. ej. `python .claude/hooks/check_doc_coverage.py src/pkg/foo.py`.
    2. Si sale con **código 0**, la documentación está cubierta: pasa al paso 5.
-   3. Si sale con **código ≠ 0**, **auto-remedia** los huecos que reporta (no commitees con huecos):
+   3. Si sale con **código ≠ 0**, **auto-remedia** los huecos que reporta (no commitees con huecos). El gate los agrupa por tipo; remedia cada tipo con su comando:
       - **Docstrings faltantes** y **`docs/modules/<modulo>.md` faltantes**: invoca la skill `/docs <fichero>` sobre cada módulo afectado (genera docstrings estilo Google en el idioma del codebase y sincroniza su `docs/modules/<modulo>.md`).
+      - **`docs/STATE.md` desactualizado** (un módulo con API pública no está referenciado en STATE.md): invoca `/state` para regenerar la sección de arquitectura/módulos y las tablas de specs. NO inventes ADRs ni specs: si detectas código no trivial sin spec, márcalo para decisión humana.
       - **Sección `[No publicado]` del changelog vacía**: invoca `/changelog` (o añade tú la entrada que describa el cambio).
-      - **Si hubo módulos nuevos/eliminados o decisiones técnicas**: sincroniza `docs/STATE.md` (con `/state` o delegando en el subagente `docs-maintainer`). NO inventes ADRs ni specs: si detectas código no trivial sin spec, márcalo para decisión humana.
    4. **Re-ejecuta el gate** del paso 4.1. Repite la remediación hasta que salga con código 0 (máximo ~3 iteraciones). Si sigue fallando por algo que requiere criterio humano, **para y repórtalo** sin commitear.
    5. Muestra al usuario un resumen breve de la documentación que generaste o actualizaste.
 5. Analiza el diff y propón un mensaje de commit siguiendo Conventional Commits:

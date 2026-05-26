@@ -163,7 +163,7 @@ Dentro de la sesión de `claude`, escribe `/` y verás los comandos disponibles:
 | `/test [args]` | Ejecuta pytest. Sin args, corre la suite con cobertura. Con args (`/test tests/test_foo.py::test_bar`), corre solo eso. |
 | `/lint` | Ejecuta `ruff format`, `ruff check --fix` y `mypy`. Reporta lo que no se ha podido auto-arreglar. |
 | `/review [rama-base]` | Hace una revisión de los cambios pendientes contra la rama base (default: `main`). |
-| `/commit [tipo]` | Genera un commit message siguiendo Conventional Commits a partir del diff actual. Antes corre el gate de calidad (ruff + pytest) y la auditoría de cobertura de documentación, auto-remediando docstrings y `docs/modules/` que falten. |
+| `/commit [tipo]` | Genera un commit message siguiendo Conventional Commits a partir del diff actual. Antes corre el gate de calidad (ruff + pytest) y la auditoría de cobertura de documentación, auto-remediando docstrings, `docs/modules/` y `docs/STATE.md` que falten. |
 | `/refactor <fichero>` | Refactoriza un fichero respetando convenciones. Verifica con tests al terminar. |
 | `/audit [ámbito]` | Auditoría arquitectónica del codebase. Compara contra `STATE.md` y ADRs vía subagente `refactorer`. Propone refactors priorizados, no aplica nada sin confirmación. |
 | `/docs <fichero>` | Añade o mejora docstrings (estilo Google) en un fichero concreto. |
@@ -347,7 +347,7 @@ Cinco mecanismos colaboran:
 2. **Hook `PostToolUse`**: cuando Claude edita `docs/STATE.md`, `docs/changelog.md` o `docs/specs/*.md`, marca `.claude/.cache/docs-touched.flag`.
 3. **Hook `Stop`**: si hay flag de src/ pero NO flag de docs/, **bloquea con `exit 2`** y obliga a Claude a continuar y actualizar docs antes de terminar.
 4. **Pre-commit `docs-sync-check`**: bloquea el commit si tocas `src/` sin actualizar ningún `docs/` (heurística de presencia).
-5. **Pre-commit `doc-coverage`** (`.claude/hooks/check_doc_coverage.py`): bloquea el commit si el código staged no está realmente documentado — docstrings públicos, su `docs/modules/<modulo>.md` y la sección `[No publicado]` del changelog (verificación de contenido). La skill `/commit` corre este mismo gate antes y auto-remedia los huecos.
+5. **Pre-commit `doc-coverage`** (`.claude/hooks/check_doc_coverage.py`): bloquea el commit si el código staged no está realmente documentado — docstrings públicos, su `docs/modules/<modulo>.md`, su referencia en `docs/STATE.md` y la sección `[No publicado]` del changelog (verificación de contenido). La skill `/commit` corre este mismo gate antes y auto-remedia los huecos (vía `/docs`, `/state` y `/changelog`).
 
 El resultado: tras cualquier sesión que toque `src/`, las docs viva quedan sincronizadas. No tienes que acordarte.
 
