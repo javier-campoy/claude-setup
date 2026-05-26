@@ -125,6 +125,7 @@ uv run ruff check . --fix && uv run ruff format . && uv run mypy src && uv run p
 6. **No suprimas warnings** ni bypassees `mypy`/`ruff` con `# type: ignore` o `# noqa` salvo que sea imprescindible y comentado.
 7. **Comentarios**: explica el *por qué*, no el *qué*. El código debe ser autoexplicativo.
 8. **Si algo es ambiguo, pregunta**. Mejor una pregunta corta que una refactorización equivocada.
+9. **Toda spec se crea con `/spec`, sin excepciones.** Nunca redactes una spec a mano en `docs/specs/` ni "pegues" texto directamente en un fichero `NNNN-slug.md`. Si el usuario te pide una spec, lanza `/spec "<descripción>"`. El comando se encarga de la numeración, el frontmatter, la verificación de la visión, la clasificación de trivialidad y el encadenamiento automático de `/spec-review` cuando toca. Si el usuario te describe un cambio no trivial sin decir explícitamente "spec", **propónle crearla con `/spec`** antes de tocar código.
 
 ## Documentación viva: cómo funciona
 
@@ -144,17 +145,58 @@ La documentación de este repo NO se publica como sitio web. Son ficheros Markdo
                                  → la revisas y ajustas; evoluciona luego con /vision
 1. /spec "qué quieres"          → verifica que la visión existe (si no, te manda a /vision)
                                  → crea docs/specs/NNNN-slug.md (Draft), alineada con el norte
+                                 → clasifica la spec (trivial vs no trivial)
+                                 → si es no trivial, encadena AUTOMÁTICAMENTE /spec-review
+                                   (Opus, subagente spec-architect)
+                                       · NO reescribe la spec: detecta incoherencias con
+                                         la visión, choques con ADRs, boundaries mal
+                                         trazados, conflictos con otras specs activas
+                                       · inserta subsección "Revisión arquitectónica"
+                                       · veredicto: GO | GO-WITH-CHANGES | RETHINK
+                                 → si es trivial, no consume Opus
+                                 → opt-out: pasar `--skip-review` en el argumento de /spec
 2. revisas, editas, apruebas    → cambias status a Approved
+                                 (no apruebes si el veredicto fue RETHINK)
 3. /implement-spec docs/specs/NNNN-slug.md
-                                 → Claude implementa siguiendo la spec
+                                 → Claude implementa siguiendo la spec (en Sonnet)
                                  → marca como Implemented
                                  → actualiza STATE.md + changelog.md
                                  → hace commit y push automáticamente
 ```
 
+> Nota: `/spec-review` también puede invocarse a mano sobre una spec ya existente (p.ej. revisión adicional tras editarla). Pero en el flujo normal, lo dispara `/spec` automáticamente.
+
 La **visión es el nexo**: precede a las specs y se toma de referencia en sprints, specs y decisiones técnicas. No es inmutable — evoluciona con `/vision` conforme el proyecto aprende.
 
 Hotfixes triviales (typos, format, errores obvios de 1-2 líneas) pueden saltarse el spec.
+
+### Cuándo usar Opus (gate de arquitectura)
+
+El flujo está pensado para usar **Sonnet por defecto** y **Opus solo como árbitro estructural**, en un único punto:
+
+- **Generación de specs**: Sonnet (`/spec`).
+- **Validación arquitectónica de specs no triviales**: Opus (`/spec-review`, subagente `spec-architect`). Se dispara **automáticamente** desde `/spec` cuando la heurística de trivialidad lo marca; también puede invocarse a mano sobre una spec ya creada.
+- **Implementación**: Sonnet (`/implement-spec`).
+- **Refactor, revisión de código, mantenimiento de docs**: Sonnet (subagentes `refactorer`, `code-reviewer`, `docs-maintainer`).
+
+`/spec-review` se ejecuta (automática o manualmente) cuando la spec:
+
+- Introduce un módulo nuevo o reorganiza módulos existentes.
+- Toca boundaries entre componentes (responsabilidades cruzadas).
+- Cambia o introduce API pública.
+- Solapa o depende de otra spec activa.
+- Toma una decisión de diseño que podría acabar en ADR.
+
+**No** se ejecuta para CRUD locales, hotfixes, refactors cosméticos o specs que no alteran contratos entre módulos: el coste no se justifica. La heurística vive en `/spec`.
+
+Para forzar saltar la revisión en una spec que la heurística marcaría como no trivial, pasa `--skip-review` en el argumento de `/spec`. Úsalo con criterio.
+
+Reglas duras:
+
+- El subagente `spec-architect` **nunca reescribe** specs ni genera código. Es validador.
+- `/spec-review` es el **único punto de entrada** autorizado para invocar `spec-architect`. `/spec` lo encadena; ningún otro comando llama al subagente directamente.
+- `/implement-spec` **advierte** si una spec parece no trivial y no pasó por `/spec-review` (caso típico: specs antiguas o creadas con `--skip-review`); **no bloquea** salvo que la revisión existente tenga veredicto `RETHINK`.
+- Si `spec-architect` devuelve veredicto `RETHINK`, **no apruebes la spec** ni la implementes hasta resolver la conversación pendiente.
 
 ### Hooks que mantienen la doc viva sincronizada
 
@@ -165,8 +207,8 @@ Los hooks están en `.claude/hooks/` y configurados en `.claude/settings.json`:
 3. **Tras editar `docs/STATE.md`, `docs/changelog.md` o `docs/specs/*.md`** → marca `.claude/.cache/docs-touched.flag`.
 4. **Al terminar la respuesta (`Stop` hook)**: si hay flag de src/ pero no de docs/, **bloquea con `exit 2`** y obliga a Claude a actualizar docs antes de cerrar la sesión.
 5. **Pre-commit `docs-sync-check`**: si commiteas cambios en `src/` sin tocar `docs/`, **bloquea el commit** (exit 1). Es una heurística de *presencia* (¿se tocó algún doc?).
-6. **Cobertura de documentación** (`.claude/hooks/check_doc_coverage.py`): gate determinista que comprueba *contenido*, no solo presencia. Sobre los `src/*.py` que vas a commitear verifica que (a) toda función/clase/método público tenga docstring, (b) cada módulo con API pública tenga su `docs/modules/<modulo>.md`, y (c) la sección `[No publicado]` del changelog tenga entradas. Lo usan dos capas:
-   - La skill `/commit`, que lo ejecuta y **auto-remedia** los huecos (vía `/docs` y `/changelog`) antes de commitear.
+6. **Cobertura de documentación** (`.claude/hooks/check_doc_coverage.py`): gate determinista que comprueba *contenido*, no solo presencia. Sobre los `src/*.py` que vas a commitear verifica que (a) toda función/clase/método público tenga docstring, (b) cada módulo con API pública tenga su `docs/modules/<modulo>.md`, (c) cada módulo con API pública esté referenciado en `docs/STATE.md` (captura el módulo nuevo/renombrado que no llega al estado del repo), y (d) la sección `[No publicado]` del changelog tenga entradas. Lo usan dos capas:
+   - La skill `/commit`, que lo ejecuta y **auto-remedia** los huecos (vía `/docs`, `/state` y `/changelog`) antes de commitear.
    - El hook `pre-commit doc-coverage`, que es el backstop determinista para `git commit` manual (bloquea con exit 1).
 
 ### Hooks de control de versiones (pre-commit, commit-msg, pre-push)
@@ -180,7 +222,7 @@ uv run pre-commit install --hook-type pre-commit --hook-type commit-msg --hook-t
 |---|---|---|
 | `protect-main-branch` | pre-commit | Bloquea commits directos a `main`/`master`. Usa ramas `feat/...`, `fix/...`. |
 | `docs-sync-check` | pre-commit | Bloquea si hay cambios en `src/` sin actualizar `docs/` (presencia). |
-| `doc-coverage` | pre-commit | Bloquea si el código staged no está documentado: docstrings públicos, `docs/modules/<modulo>.md` y changelog `[No publicado]` (contenido). |
+| `doc-coverage` | pre-commit | Bloquea si el código staged no está documentado: docstrings públicos, `docs/modules/<modulo>.md`, referencia en `docs/STATE.md` y changelog `[No publicado]` (contenido). |
 | `gitleaks` | pre-commit | Escanea secrets: tokens, API keys, connection strings, etc. |
 | `conventional-commits` | commit-msg | Valida que el mensaje siga el formato `<tipo>[(<scope>)]: <resumen>`. |
 | `pre-push-quality-gate` | pre-push | Ejecuta `ruff check` + `mypy src` + `pytest` antes de subir al remoto. |
@@ -201,12 +243,13 @@ uv run pre-commit install --hook-type pre-commit --hook-type commit-msg --hook-t
 
 ## Subagentes disponibles
 
-- `code-reviewer` — Revisa cambios buscando bugs, problemas de seguridad y mejoras de diseño.
-- `test-writer` — Genera tests pytest exhaustivos para código existente.
-- `docs-maintainer` — Audita coherencia código ↔ docs viva. Úsalo cuando sospeches que `STATE.md`, `changelog.md`, las specs o los `modules/*.md` no reflejan la realidad del código.
-- `refactorer` — Mantiene el repo coherente con el norte de `docs/VISION.md` y la arquitectura/ADRs de `docs/STATE.md`. Detecta drift respecto al norte, drift arquitectónico, deuda estructural, duplicación e inconsistencias. Propone refactors priorizados; aplica los pequeños tras confirmación, sugiere `/spec` para los grandes.
+- `code-reviewer` — Revisa cambios buscando bugs, problemas de seguridad y mejoras de diseño. (Sonnet)
+- `test-writer` — Genera tests pytest exhaustivos para código existente. (Sonnet)
+- `docs-maintainer` — Audita coherencia código ↔ docs viva. Úsalo cuando sospeches que `STATE.md`, `changelog.md`, las specs o los `modules/*.md` no reflejan la realidad del código. (Sonnet)
+- `refactorer` — Mantiene el repo coherente con el norte de `docs/VISION.md` y la arquitectura/ADRs de `docs/STATE.md`. Detecta drift respecto al norte, drift arquitectónico, deuda estructural, duplicación e inconsistencias. Propone refactors priorizados; aplica los pequeños tras confirmación, sugiere `/spec` para los grandes. (Sonnet)
+- `spec-architect` — **Árbitro de arquitectura** para specs en `Draft`. NO genera ni reescribe specs: valida coherencia estructural contra `VISION.md`, `STATE.md`, ADRs y otras specs activas. Devuelve un veredicto (`GO` / `GO-WITH-CHANGES` / `RETHINK`) y un diff conceptual mínimo. **Único subagente en Opus; úsalo solo vía `/spec-review`** y solo en specs no triviales.
 
-Invócalos con: `Use the code-reviewer subagent to review my recent changes`.
+Invócalos con: `Use the code-reviewer subagent to review my recent changes`. La excepción es `spec-architect`: se lanza siempre a través de `/spec-review`, nunca directamente.
 
 ## Comandos slash personalizados
 
@@ -218,7 +261,8 @@ Invócalos con: `Use the code-reviewer subagent to review my recent changes`.
 - `/audit [ámbito]` — Auditoría arquitectónica vía subagente `refactorer`. Compara contra `docs/STATE.md` y los ADRs, propone refactors priorizados.
 - `/docs` — Genera/actualiza docstrings en un fichero concreto y sincroniza el `docs/modules/<modulo>.md` correspondiente.
 - `/vision [descripción]` — Crea o evoluciona `docs/VISION.md`, el norte del proyecto. Se usa una vez antes de la primera spec, y luego cuando cambia la dirección (registrando la revisión).
-- `/spec <descripción>` — Crea una nueva spec en `docs/specs/` (estado Draft). Exige que la visión esté rellenada.
+- `/spec <descripción> [--skip-review]` — Crea una nueva spec en `docs/specs/` (estado Draft). Exige que la visión esté rellenada. Clasifica la spec como trivial o no trivial y, si es no trivial, **encadena automáticamente `/spec-review`** sobre el draft. Pasa `--skip-review` para saltarte esa pasada por Opus.
+- `/spec-review <ruta-spec>` — Revisión arquitectónica de una spec por el subagente `spec-architect` (Opus). Único punto donde se usa Opus en el flujo. Se invoca automáticamente desde `/spec` para specs no triviales; también puede ejecutarse a mano sobre una spec ya creada (p.ej. tras editarla manualmente). Inserta una subsección "Revisión arquitectónica" en la spec con veredicto y cambios mínimos.
 - `/state` — Regenera `docs/STATE.md` con la estructura, stack, métricas y specs actuales, y sincroniza los `docs/modules/*.md`.
 - `/changelog [rango]` — Añade entradas al `docs/changelog.md` para los cambios recientes.
 - `/implement-spec <ruta>` — Implementa una spec aprobada paso a paso, actualizando docs (STATE.md, changelog, modules/), haciendo commit y push al terminar.

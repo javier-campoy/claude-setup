@@ -20,6 +20,12 @@ Implementa la spec indicada en $ARGUMENTS siguiendo el flujo spec-driven.
      - Con Grep, busca `[VERIFICAR]` en la spec.
      - Si aparece alguno → **para**. Una spec aprobada no debería tener huecos sin aclarar: cada `_[VERIFICAR]_` es una decisión humana pendiente que NO debes adivinar. Mensaje: "La spec tiene N marcadores `_[VERIFICAR]_` sin resolver (líneas X, Y, …). Acláralos en la spec antes de implementar y vuelve a ejecutar /implement-spec." Lista las líneas concretas.
      - Si no hay ninguno → continúa.
+   - **Advertencia (no bloqueante) sobre revisión arquitectónica**:
+     - Con Grep, busca `## Revisión arquitectónica` en la spec.
+     - Si **no aparece**, evalúa rápidamente si la spec es no trivial: introduce módulo nuevo, toca boundaries, cambia API pública, depende de otra spec activa, o toma una decisión de diseño que podría acabar en ADR.
+     - Si parece no trivial → **avisa al usuario** (no bloquees): "Esta spec parece no trivial y no consta `## Revisión arquitectónica`. Recomendado pasar `/spec-review docs/specs/NNNN-…md` antes de implementarla. ¿Continúo igualmente?" y espera confirmación explícita.
+     - Si el usuario confirma "sí, sigue" → continúa. Si el usuario decide ejecutar `/spec-review` primero → para y devuelve el control. Si te dice que la spec es trivial → continúa sin más.
+     - Si la spec sí tiene revisión y el veredicto fue `RETHINK` → **para**. Mensaje: "La spec tiene revisión arquitectónica con veredicto RETHINK. Resuélvelo antes de implementar."
 
 2. **Contexto**:
    - Lee `CLAUDE.md`, `docs/VISION.md` y `docs/STATE.md`.

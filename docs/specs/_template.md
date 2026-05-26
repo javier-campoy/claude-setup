@@ -85,6 +85,14 @@ Lista verificable de qué debe ser cierto cuando se considere implementada.
 - Discusiones: enlaces relevantes
 - Referencias externas: papers, blog posts, RFCs de otras librerías
 
+<!--
+Si la spec es no trivial (módulo nuevo, boundaries entre componentes, API pública, decisión de diseño que podría acabar en ADR, solapamiento con otra spec activa), pasa /spec-review antes de aprobarla. El comando insertará aquí la subsección:
+
+## Revisión arquitectónica
+
+con el veredicto del subagente spec-architect (Opus) y los cambios mínimos propuestos. Para specs triviales, sáltatela.
+-->
+
 ## 10. Decisiones durante la implementación
 
 > Sección que rellena Claude durante `/implement-spec`. Si surgen preguntas o desviaciones de la spec, las anota aquí (sin tocar las secciones anteriores) para revisión post-implementación.
