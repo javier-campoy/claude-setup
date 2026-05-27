@@ -180,29 +180,46 @@ for f in "${FILES_CUSTOMIZE[@]}"; do
 done
 
 echo ""
-echo "Configuración global de usuario (~/.claude/settings.json)..."
+echo "Configuración global de usuario (~/.claude/)..."
+
+# --- settings.json -----------------------------------------------------------
 USER_SETTINGS_SRC="$KIT_DIR/user-settings.json"
 USER_SETTINGS_DST="$HOME/.claude/settings.json"
+INSTALL_GLOBAL=0
 if [ -f "$USER_SETTINGS_SRC" ]; then
-    INSTALL_USER=0
     if [ "$NO_PROMPT" -eq 1 ]; then
-        INSTALL_USER=1
+        INSTALL_GLOBAL=1
     elif [ -f "$USER_SETTINGS_DST" ]; then
-        read -r -p "  Ya existe $USER_SETTINGS_DST. ¿Sobreescribir? [s/N]: " ans || ans=""
-        [[ "${ans,,}" == "s" || "${ans,,}" == "si" || "${ans,,}" == "sí" ]] && INSTALL_USER=1
+        read -r -p "  Ya existe $USER_SETTINGS_DST. ¿Sobreescribir settings + agents + commands globales? [s/N]: " ans || ans=""
+        [[ "${ans,,}" == "s" || "${ans,,}" == "si" || "${ans,,}" == "sí" ]] && INSTALL_GLOBAL=1
     else
-        read -r -p "  Instalar user-settings.json en $USER_SETTINGS_DST? [S/n]: " ans || ans=""
-        [[ -z "$ans" || "${ans,,}" == "s" || "${ans,,}" == "si" || "${ans,,}" == "sí" ]] && INSTALL_USER=1
+        read -r -p "  Instalar config global (settings, agents, commands) en ~/.claude/? [S/n]: " ans || ans=""
+        [[ -z "$ans" || "${ans,,}" == "s" || "${ans,,}" == "si" || "${ans,,}" == "sí" ]] && INSTALL_GLOBAL=1
     fi
-    if [ "$INSTALL_USER" -eq 1 ]; then
+    if [ "$INSTALL_GLOBAL" -eq 1 ]; then
         mkdir -p "$HOME/.claude"
         cp "$USER_SETTINGS_SRC" "$USER_SETTINGS_DST"
-        echo "  · user-settings.json → $USER_SETTINGS_DST  OK"
+        echo "  · user-settings.json → ~/.claude/settings.json  OK"
     else
-        echo "  · salto (no se modifica ~/.claude/settings.json)"
+        echo "  · salto (no se modifica ~/.claude/)"
     fi
 else
     echo "  · user-settings.json no encontrado en el kit, salto"
+fi
+
+# --- agents y commands globales ----------------------------------------------
+DOTCLAUDE_SRC="$KIT_DIR/dotclaude"
+if [ "$INSTALL_GLOBAL" -eq 1 ] && [ -d "$DOTCLAUDE_SRC" ]; then
+    for subdir in agents commands; do
+        src_dir="$DOTCLAUDE_SRC/$subdir"
+        dst_dir="$HOME/.claude/$subdir"
+        if [ -d "$src_dir" ] && [ "$(ls -A "$src_dir" 2>/dev/null)" ]; then
+            mkdir -p "$dst_dir"
+            cp "$src_dir/"*.md "$dst_dir/"
+            count=$(ls "$src_dir/"*.md 2>/dev/null | wc -l)
+            echo "  · $subdir ($count ficheros) → ~/.claude/$subdir/  OK"
+        fi
+    done
 fi
 
 echo ""
