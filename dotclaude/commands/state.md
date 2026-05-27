@@ -27,7 +27,7 @@ Regenera `docs/STATE.md` y los ficheros `docs/modules/*.md` para reflejar el est
    - **Sección 2 (Arquitectura y módulos)**: REGENERAR con la estructura real de `src/`. Para cada módulo, infiere su responsabilidad del docstring del `__init__.py` o del módulo. Si no hay docstring, marca `_[describir]_`. Incluye enlace a `docs/modules/<nombre>.md` si existe.
    - **Sección 3 (Stack y dependencias)**: leer `pyproject.toml`, listar deps de runtime y dev/docs.
    - **Sección 4 (ADRs inline)**: PRESERVAR. NUNCA borres ADRs existentes. Solo añade nuevas si has tomado decisiones técnicas relevantes en este turno (raro).
-   - **Sección 5 (Specs)**: REGENERAR las tres tablas (Activas, Implementadas, Rechazadas) leyendo el frontmatter de cada spec.
+   - **Sección 5 (Specs)**: REGENERAR las tres tablas (Activas, Implementadas, Rechazadas) leyendo el frontmatter de cada spec. **PRESERVAR íntegra la subsección "Directrices vigentes para próximas specs" (§5.5)**: es contenido humano-curado más auto-añadidos por `/implement-spec` (con confirmación humana). NUNCA la regeneres ni reordenes sus filas. Si una directriz tiene estado `cerrada (NNNN, <hash>)`, déjala como histórico.
    - **Sección 6 (Estado del codebase)**: REGENERAR con las métricas y salud actuales.
    - **Sección 7 (Roadmap)**: derivado de las specs `Approved` no implementadas. PRESERVAR notas humanas adicionales.
 
@@ -73,8 +73,9 @@ Para cada fichero de módulo:
 
 ## Reglas
 
-- **NUNCA toques `docs/VISION.md`**. La visión es prescriptiva y de propiedad humana; se edita con `/vision`, no con `/state`. `/state` solo la lee para mantener alineada la sección 1 de STATE.md. Si detectas que el código contradice el norte, NO edites la visión: márcalo con `<!-- TODO: posible desalineación con VISION.md: ... -->` y avisa al usuario.
+- **NUNCA toques `docs/VISION.md`**. La visión es prescriptiva y de propiedad humana; se edita con `/vision`, no con `/state`. `/state` solo la lee para mantener alineada la sección 1 de STATE.md. Si detectas que el código contradice el norte, NO edites la visión: márcalo con `<!-- TODO: posible desalineación con docs/VISION.md: ... -->` y avisa al usuario. (Nota: la regla genérica "VISION solo se edita con `/vision`" tiene dos excepciones acotadas para `/spec` (paso 7.5 — añadir entrada a §11.5) y `/implement-spec` (pasos 7e/7f — marcar bullets `[x]` y cerrar §11.5), siempre con confirmación humana. `/state` **no** está entre las excepciones.)
 - **NUNCA borres ADRs**. Son histórico, solo se añaden.
 - **NUNCA cambies decisiones de diseño** ya documentadas; si crees que hay que cambiarlas, abre una spec nueva.
+- **NUNCA regeneres §5.5 "Directrices vigentes para próximas specs"**. Es contenido humano-curado más auto-añadidos por `/implement-spec` (con confirmación humana). `/state` la preserva tal cual. Si crees que falta una directriz nueva, proponla al usuario; no la añadas tú.
 - **PRESERVA** la sección `## Visión general` de cada `docs/modules/*.md`.
 - Si una sección humana (Visión general, Roadmap) parece desactualizada respecto al código, NO la edites: marca con un comentario HTML `<!-- TODO: revisar, parece desactualizado tras cambios en X -->`.

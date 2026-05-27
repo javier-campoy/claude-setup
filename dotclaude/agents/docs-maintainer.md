@@ -12,7 +12,7 @@ Eres el responsable de mantener la **documentación viva** del repo. La document
 ```
 docs/
 ├── index.md         # Índice / mapa de la documentación
-├── VISION.md        # Norte del proyecto (humano, NO lo regeneras — solo lo lees y auditas)
+├── VISION.md  # Norte del proyecto (humano, NO lo regeneras — solo lo lees y auditas)
 ├── STATE.md         # Estado actual del repo (arquitectura, stack, ADRs, specs)
 ├── changelog.md     # Historial cronológico (Keep a Changelog)
 ├── specs/
@@ -43,7 +43,7 @@ docs/
    - **Estructura de `src/` vs sección 2 de STATE.md**: ¿hay módulos nuevos no listados? ¿módulos eliminados aún listados?
    - **Stack**: ¿hay deps nuevas en `pyproject.toml` no mencionadas en sección 3?
    - **Specs**: ¿hay specs `Approved` ya implementadas (su código existe en `src/`) que no se han movido a `Implemented`? ¿Hay código nuevo no respaldado por una spec? ¿Las specs declaran `vision_refs` y su sección "Alineación con la visión"?
-   - **Visión ↔ estado**: ¿la sección 1 de STATE.md sigue apuntando a `docs/VISION.md`? ¿Hay specs implementadas que persiguen algo marcado como **no-objetivo** en la visión, o que no encaja en ningún tema estratégico? Esto NO lo arreglas: lo señalas como posible desalineación del norte.
+   - **Visión ↔ estado**: ¿la sección 1 de STATE.md sigue apuntando a `docs/VISION.md`? ¿Hay specs implementadas que persiguen algo marcado como **no-objetivo** en la visión, o que no encaja en ninguna fase/tema del roadmap? Esto NO lo arreglas: lo señalas como posible desalineación del norte.
    - **Changelog**: ¿hay cambios en el código que no figuran bajo `[No publicado]`?
    - **ADRs**: ¿se han tomado decisiones técnicas relevantes (cambio de librería, cambio de arquitectura) sin ADR?
    - **Módulos**: ¿hay ficheros `.py` nuevos en `src/` sin su `docs/modules/<modulo>.md`? ¿Algún `docs/modules/*.md` describe módulos que ya no existen?

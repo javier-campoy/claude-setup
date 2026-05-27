@@ -100,14 +100,21 @@ uv run ruff check . --fix && uv run ruff format . && uv run mypy src && uv run p
 - Una unidad lógica por commit; mensajes en imperativo y en español o inglés (consistente).
 - Rebase preferido sobre merge para mantener el historial lineal.
 - **Nunca commitees sin haber pasado**: `ruff check . && ruff format . && mypy src && pytest`.
-- Todo cambio de código vive en una rama de feature (`feat/...`, `fix/...`). Nunca directamente en `main`.
-- Tras implementar, push a la rama y abre un PR. **No hagas merge directo ni automático a `main`.**
-- **CI debe estar en verde antes de mergear** cualquier PR (`ci.yml` debe pasar).
+- **`develop`** es la rama de integración. **`main`** queda reservada para releases (el hook `protect-main-branch` bloquea commits directos a `main`/`master`).
+- **Dos modos de trabajo válidos**, según el tamaño del cambio:
+  - **Directo en `develop`** — para hotfixes, typos y cambios pequeños. Commit en `develop`, `push` a `origin/develop`, CI en verde.
+  - **Worktree por rama** — para specs, features grandes o trabajo paralelo. Cada cambio vive en su propio worktree sobre una rama `feat/...` o `fix/...` que parte de `develop` limpio (`baseRef: fresh` en `.claude/settings.json`).
+- **Flujo worktree** (recomendado para specs):
+  1. `EnterWorktree` (o `claude --worktree`) crea un árbol aislado en una rama nueva partiendo de `origin/develop`. `.venv` y las cachés se symlinkean desde el repo principal — no se duplican.
+  2. Trabajo aislado en ese worktree: commits, lint, tests, push de la rama si quieres CI/backup remoto.
+  3. **Al cerrar la rama**: merge a `develop` desde el repo principal (`git merge --no-ff feat/<slug>` o PR si lo prefieres), borra la rama local y remota, sal del worktree con `ExitWorktree` (que limpia el árbol).
+  4. `develop` → `main` sólo en `/release <versión>`.
+- Múltiples worktrees pueden coexistir (uno por spec/feature en marcha). Cada uno tiene su rama; sólo se mergean a `develop` cuando se cierran.
 
 ## CI/CD y releases
 
-- **CI** (`.github/workflows/ci.yml`): ruff + mypy + pytest en cada push/PR. Un PR no se mergea con CI rojo.
-- **Releases** se hacen con `/release <versión>` sobre `main`, después de mergear una o más features:
+- **CI** (`.github/workflows/ci.yml`): ruff + mypy + pytest en cada push a `develop`/`main` (y en cualquier PR).
+- **Releases**: cuando `develop` está estable se integra en `main` y se publica con `/release <versión>` sobre `main`:
   - Bump en `pyproject.toml` + rename `[No publicado]` → `[X.Y.Z]` en changelog.
   - `git tag vX.Y.Z` → GitHub Actions construye el paquete y crea el GitHub Release con el contenido del changelog.
 - **Versionado semántico** (`MAJOR.MINOR.PATCH`):
@@ -120,7 +127,7 @@ uv run ruff check . --fix && uv run ruff format . && uv run mypy src && uv run p
 1. **Antes de escribir código**, lee los ficheros relevantes con `Read` y orienta tus cambios al estilo existente.
 2. **Cuando edites código**, ejecuta lint/format/tests al terminar (el hook lo hace automáticamente para format).
 3. **No instales dependencias** sin pedir confirmación. Si necesitas una nueva dep, propón la línea para `pyproject.toml` y espera aprobación.
-4. **No hagas push directo a `main`**. Trabaja siempre en ramas `feat/...`, `fix/...`. Tras implementar, push a la rama y sugiere al usuario abrir un PR. **No hagas merge automático**: el usuario decide cuándo mergear, y solo después de que CI esté en verde.
+4. **Elige el modo de trabajo según el cambio**: cambios pequeños van directos a `develop` (commit + push a `origin/develop`); specs y features grandes van en su propio worktree sobre una rama `feat/...`/`fix/...` (parte de `origin/develop` limpio vía `baseRef: fresh`) y se mergean a `develop` al cerrar. **Nunca commitees ni hagas push a `main`/`master`** (reservadas para releases; el hook `protect-main-branch` las bloquea).
 5. **Tests primero cuando arreglemos un bug**: reproduce el bug en un test que falle, luego arregla.
 6. **No suprimas warnings** ni bypassees `mypy`/`ruff` con `# type: ignore` o `# noqa` salvo que sea imprescindible y comentado.
 7. **Comentarios**: explica el *por qué*, no el *qué*. El código debe ser autoexplicativo.
@@ -226,6 +233,7 @@ Los hooks están en `.claude/hooks/` y configurados en `.claude/settings.json`:
 6. **Cobertura de documentación** (`.claude/hooks/check_doc_coverage.py`): gate determinista que comprueba *contenido*, no solo presencia. Sobre los `src/*.py` que vas a commitear verifica que (a) toda función/clase/método público tenga docstring, (b) cada módulo con API pública tenga su `docs/modules/<modulo>.md`, (c) cada módulo con API pública esté referenciado en `docs/STATE.md` (captura el módulo nuevo/renombrado que no llega al estado del repo), y (d) la sección `[No publicado]` del changelog tenga entradas. Lo usan dos capas:
    - La skill `/commit`, que lo ejecuta y **auto-remedia** los huecos (vía `/docs`, `/state` y `/changelog`) antes de commitear.
    - El hook `pre-commit doc-coverage`, que es el backstop determinista para `git commit` manual (bloquea con exit 1).
+7. **Gate de consistencia specs ↔ STATE §5** (`.claude/hooks/check_spec_state_sync.py`): verifica que el `status` de cada spec (Draft/Approved/Implemented/Rejected) coincida con la tabla en la que aparece en `docs/STATE.md` §5. Lo ejecuta `/implement-spec` en su paso 7h antes de commitear; sale con código 1 si hay discrepancias.
 
 ### Hooks de control de versiones (pre-commit, commit-msg, pre-push)
 
@@ -236,7 +244,7 @@ uv run pre-commit install --hook-type pre-commit --hook-type commit-msg --hook-t
 
 | Hook | Cuándo | Qué hace |
 |---|---|---|
-| `protect-main-branch` | pre-commit | Bloquea commits directos a `main`/`master`. Usa ramas `feat/...`, `fix/...`. |
+| `protect-main-branch` | pre-commit | Bloquea commits directos a `main`/`master`. El desarrollo va en `develop` o en ramas `feat/...`/`fix/...`. |
 | `docs-sync-check` | pre-commit | Bloquea si hay cambios en `src/` sin actualizar `docs/` (presencia). |
 | `doc-coverage` | pre-commit | Bloquea si el código staged no está documentado: docstrings públicos, `docs/modules/<modulo>.md`, referencia en `docs/STATE.md` y changelog `[No publicado]` (contenido). |
 | `gitleaks` | pre-commit | Escanea secrets: tokens, API keys, connection strings, etc. |

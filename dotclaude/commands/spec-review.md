@@ -60,13 +60,38 @@ Si dudas, hazlo: es barato y deja traza. Si claramente no aplica, sáltatelo.
 
 6. **Acción según veredicto**:
    - **GO**: informa al usuario "Spec estructuralmente sana. Puedes cambiar `status` a `Approved` cuando quieras."
-   - **GO-WITH-CHANGES**: enumera los cambios mínimos y propón aplicarlos. NO los apliques sin confirmación uno a uno (o tras aprobación explícita del bloque). Tras aplicarlos, registra en la propia subsección "Revisión arquitectónica" un breve "Cambios aplicados: …".
+   - **GO-WITH-CHANGES**: aplica los cambios mínimos **con criterio**, según el procedimiento de abajo. El objetivo es dejar la spec preparada para que el humano solo tenga que cambiar `status: Draft → Approved`.
    - **RETHINK**: para. Explica la razón al usuario y sugiere conversación humana, posible `/vision` o reformulación de la spec. No avances ni propongas aprobar.
+
+### Procedimiento para `GO-WITH-CHANGES`
+
+El subagente `spec-architect` (Opus) entrega cada cambio mínimo como un patch ejecutable: ubicación + tipo (`insertar | reemplazar | mover | eliminar | REQUIERE-HUMANO`) + texto exacto. Confía en su criterio — las decisiones de bajo nivel (nombrado, dónde encaja una responsabilidad, redacción de un boundary) son suyas, no del humano.
+
+Recorre los cambios en orden:
+
+- **`insertar | reemplazar | mover | eliminar`** → aplícalos con `Edit` usando exactamente el texto que da el subagente. No reinterpretes, no pulas redacción, no añadas adornos. Si el `Original` no se encuentra en la spec, no inventes: márcalo como pendiente con la nota "no localizado en la spec — revisar".
+- **`REQUIERE-HUMANO`** → no apliques. El propio subagente reconoce que necesita input externo. Déjalo pendiente con su pregunta tal cual.
+
+Tras procesarlos, **añade al final de la subsección "Revisión arquitectónica"** un bloque así:
+
+```markdown
+### Cambios aplicados automáticamente
+
+- _(uno por línea, con referencia a la sección de la spec que se tocó)_
+
+### Pendientes de decisión humana
+
+- _(uno por línea, con la pregunta concreta para el humano)_
+```
+
+Si no hay cambios en alguno de los dos cubos, omite esa subsección (no dejes encabezados vacíos).
+
+Reporta al usuario en una línea: "Apliqué N/M cambios mínimos. Quedan K para tu decisión." Si `K == 0`, añade: "La spec está lista para `Approved` cuando la revises."
 
 ## Reglas duras
 
 - **Solo Opus aquí.** Este comando es el único punto autorizado para invocar a Opus en el flujo de specs. No lo uses como atajo para "revisar mejor" cualquier cosa.
-- **No reescribas la spec por tu cuenta.** El subagente devuelve diagnóstico + cambios mínimos; tú los aplicas con consentimiento.
-- **No apruebes la spec.** El cambio `Draft → Approved` lo hace el humano, siempre. Tu trabajo termina cuando la revisión queda registrada.
+- **El subagente nunca reescribe la spec.** Quien aplica los cambios mínimos en `GO-WITH-CHANGES` es esta skill (Sonnet), no `spec-architect`. La regla del subagente sigue intacta.
+- **No apruebes la spec.** El cambio `Draft → Approved` lo hace el humano, siempre. Tu trabajo termina cuando la revisión queda registrada y los cambios mecánicos aplicados.
 - **Si la visión no está rellenada**, el subagente devolverá `RETHINK` apuntando a `/vision`. Reenvía ese mensaje al usuario sin maquillarlo.
 - **No invoques a `spec-architect` desde otros comandos sin pasar por aquí.** Punto único de entrada = control de coste.
