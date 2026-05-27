@@ -1,174 +1,455 @@
-# Visión del proyecto
+# VISION.md — plantilla avanzada para flujo spec-driven
 
-> **El norte del proyecto.** Este documento define *hacia dónde vamos y por qué*. Es el nexo que specs, sprints y decisiones técnicas toman como referencia: cualquier cambio significativo debe poder justificarse contra esta visión.
+> 🧭 **Este es el norte del proyecto** (la visión): el documento prescriptivo y de propiedad humana contra el que se justifica toda spec del flujo spec-driven. Complementa a [`STATE.md`](STATE.md) (foto del presente, autogenerada) sin solaparse.
 >
-> **Cómo se relaciona con `STATE.md`**: son complementarios y NO se solapan.
-> - `VISION.md` (este fichero) → **dirección a futuro**. Prescriptivo, de propiedad humana, estable. Responde *"¿a dónde vamos?"*.
-> - [`STATE.md`](STATE.md) → **foto del presente**. Descriptivo, regenerado por Claude tras cada cambio en `src/`, volátil. Responde *"¿dónde estamos ahora?"*.
+> Documento vivo. Última revisión: *(YYYY-MM-DD)* (rev. X — *resumen corto del cambio*).
+> Revisiones previas: *(histórico resumido opcional)*
 >
-> **Es un documento vivo, pero NO automático.** Evoluciona deliberadamente conforme aprendemos: lo edita una persona (o Claude vía `/vision`, con confirmación), nunca `/state`. Cada cambio relevante de dirección queda registrado en la sección 11 (Historial de revisiones).
+> **Lenguaje principal del proyecto:** *[VERIFICAR]*
+> **Objetivo:** *[VERIFICAR — frase corta sobre el producto final]*.
+
+---
+
+# 1. Visión y principios de diseño
+
+## 1.1 Qué queremos construir
+
+> 1-3 párrafos. Describe la experiencia, producto o sistema final que queremos que exista cuando el proyecto madure.
+
+*[VERIFICAR] Describe el producto y la experiencia objetivo.*
+
+---
+
+## 1.2 Alcance del repositorio
+
+> Define explícitamente qué vive en este repo y qué no. Evita ambigüedades futuras.
+
+**Este repositorio contiene:**
+
+* *[VERIFICAR]*
+* *[VERIFICAR]*
+
+**Fuera de alcance de este repositorio:**
+
+* *[VERIFICAR]*
+* *[VERIFICAR]*
+
+---
+
+## 1.3 Principios no negociables
+
+> Reglas de diseño de alto nivel. Cuando haya conflicto entre alternativas, estas prioridades mandan.
+
+1. ***[VERIFICAR — principio]***
+   *Explicación y trade-off.*
+
+2. ***[VERIFICAR — principio]***
+   *Explicación y trade-off.*
+
+3. ***[VERIFICAR — principio]***
+   *Explicación y trade-off.*
+
+4. ***[VERIFICAR — principio]***
+   *Explicación y trade-off.*
+
+5. ***[VERIFICAR — principio]***
+   *Explicación y trade-off.*
+
+---
+
+## 1.4 Filosofía operativa
+
+> Cómo queremos que evolucione el proyecto.
+
+* Qué priorizamos primero.
+* Qué estamos dispuestos a sacrificar.
+* Qué tipo de complejidad aceptamos.
+* Qué tipo de complejidad rechazamos.
+
+*[VERIFICAR] Describe la filosofía operativa.*
+
+---
+
+## 1.5 Restricciones estratégicas
+
+> Restricciones duras del proyecto.
+
+* *[VERIFICAR] presupuesto*
+* *[VERIFICAR] equipo*
+* *[VERIFICAR] tiempo*
+* *[VERIFICAR] dependencias externas*
+* *[VERIFICAR] licencias o compliance*
+
+---
+
+## 1.6 Definición de éxito
+
+> Cómo sabremos que el proyecto “funciona” a nivel de producto.
+
+| Señal         | Objetivo      |
+| ------------- | ------------- |
+| *[VERIFICAR]* | *[VERIFICAR]* |
+| *[VERIFICAR]* | *[VERIFICAR]* |
+
+---
+
+# 2. Stack técnico
+
+> Solo decisiones relevantes a medio/largo plazo. Las decisiones temporales o experimentales viven en `STATE.md` o en specs.
+
+| Capa            | Recomendación | Alternativa   | Justificación |
+| --------------- | ------------- | ------------- | ------------- |
+| Backend         | *[VERIFICAR]* | *[VERIFICAR]* | *[VERIFICAR]* |
+| Base de datos   | *[VERIFICAR]* | *[VERIFICAR]* | *[VERIFICAR]* |
+| Cache / colas   | *[VERIFICAR]* | *[VERIFICAR]* | *[VERIFICAR]* |
+| Frontend        | *[VERIFICAR]* | *[VERIFICAR]* | *[VERIFICAR]* |
+| Infraestructura | *[VERIFICAR]* | *[VERIFICAR]* | *[VERIFICAR]* |
+| Observabilidad  | *[VERIFICAR]* | *[VERIFICAR]* | *[VERIFICAR]* |
+| Testing         | *[VERIFICAR]* | *[VERIFICAR]* | *[VERIFICAR]* |
+
+> **Estado de las decisiones:**
 >
-> **Construye esta visión ANTES de redactar tu primera spec.** El flujo `/spec` la exige rellenada. Si sigue siendo la plantilla, créala con `/vision "describe tu proyecto"`.
+> * *[VERIFICAR — qué está cerrado y qué sigue abierto].*
 
 ---
 
-## Metadatos
+# 3. Inventario de repos, referencias y dependencias externas
 
-| Campo | Valor |
-|---|---|
-| **Owner** | _(persona responsable de la visión)_ |
-| **Última actualización** | _(YYYY-MM-DD)_ |
-| **Revisión** | _(v1, v2, … — coincide con la última entrada de la sección 11)_ |
-| **Horizonte** | _(p.ej. próximos 6-12 meses)_ |
+> Lista de repos OSS, servicios o referencias conceptuales que probablemente vayamos a reutilizar, estudiar o portar.
 
----
+## 3.1 Tabla de adopción
 
-## 1. Propósito
+| Recurso       | Para qué | Tier | Riesgo legal/técnico | Acción |
+| ------------- | -------- | ---- | -------------------- | ------ |
+| *[VERIFICAR]* |          |      |                      |        |
 
-> 2-4 frases. ¿Qué problema resolvemos y por qué importa? Si alguien lee solo este apartado debería entender la razón de existir del proyecto.
+### Tier recomendado
 
-_[VERIFICAR] Describe el problema central que justifica el proyecto._
-
----
-
-## 2. Visión a futuro (el norte)
-
-> Una sola frase que capture el estado ideal al que aspiramos. Debe ser ambiciosa pero reconocible. Es la brújula que usarás cuando dudes entre dos caminos.
-
-> **Ejemplo**: _"Que cualquier desarrollador Python pueda parsear y validar configuración compleja sin escribir una sola línea de boilerplate."_
-
-_[VERIFICAR] Escribe aquí la frase-norte del proyecto._
+* **Alto** → probablemente se adopta.
+* **Medio** → útil como referencia.
+* **Bajo** → inspiración o descartado.
 
 ---
 
-## 3. Usuarios y necesidades
+## 3.2 Recursos no-código
 
-> ¿Para quién es esto? ¿Qué necesitan y qué les duele hoy? Sé concreto: un usuario bien definido vale más que "todo el mundo".
-
-| Usuario / perfil | Qué necesita | Qué le duele hoy |
-|---|---|---|
-| _[VERIFICAR]_ | | |
-
----
-
-## 4. Objetivos
-
-> Qué queremos lograr (resultados, no tareas). Cada objetivo debería ser comprobable. Las specs y los sprints existen para mover estos objetivos.
-
-- [ ] **O1** — _[VERIFICAR] objetivo medible_
-- [ ] **O2** — _…_
-- [ ] **O3** — _…_
+* *[VERIFICAR] datasets*
+* *[VERIFICAR] assets*
+* *[VERIFICAR] documentación*
+* *[VERIFICAR] papers*
 
 ---
 
-## 5. No-objetivos (fuera de alcance)
+## 3.3 Reglas de licencia y adopción
 
-> Tan importante como lo que haremos: lo que deliberadamente **NO** haremos. Define los bordes del norte y evita el scope creep. Una spec que cae aquí se rechaza.
+> Política para evitar problemas legales o deuda invisible.
 
-- _[VERIFICAR] qué decidimos NO hacer y por qué_
+* Cómo se valida una licencia.
+* Qué licencias son aceptables.
+* Qué licencias están prohibidas.
+* Cómo se documentan atribuciones.
+* Qué implica usar código sin licencia.
 
----
-
-## 6. Principios rectores
-
-> Los criterios con los que tomamos decisiones cuando hay tensión. Guían los trade-offs de cada spec. Ejemplos: "simplicidad sobre completitud", "sin dependencias pesadas", "la API pública es sagrada".
-
-1. _[VERIFICAR] principio 1_
-2. _…_
-3. _…_
+*[VERIFICAR] Define la política.*
 
 ---
 
-## 7. Métricas de éxito
+# 4. Roadmap por fases
 
-> ¿Cómo sabremos que avanzamos hacia el norte? Señales observables, no opiniones. Si no se puede medir, descríbelo como una señal cualitativa clara.
-
-| Métrica / señal | Estado actual | Objetivo |
-|---|---|---|
-| _[VERIFICAR]_ | | |
+> El roadmap debe describir capacidades de producto, no tareas técnicas sueltas.
 
 ---
 
-## 8. Temas estratégicos
+## Fase 0 — Diseño y andamiaje
 
-> Los grandes pilares de trabajo que agrupan specs y sprints. Cada tema es un "epic" de alto nivel; cada spec debería poder colgar de un tema. Esta es la tabla que conecta la visión con el trabajo concreto del día a día.
+### Objetivo
 
-| ID tema | Tema | Objetivo que mueve | Estado | Specs asociadas |
-|---|---|---|---|---|
-| T1 | _[VERIFICAR]_ | O1 | Por empezar / En curso / Hecho | _(NNNN, …)_ |
+*[VERIFICAR]*
 
----
+### Checklist
 
-## 9. Restricciones y supuestos
+* [ ] *[VERIFICAR]*
+* [ ] *[VERIFICAR]*
+* [ ] *[VERIFICAR]*
 
-> Límites con los que jugamos (técnicos, de negocio, de tiempo, de equipo) y supuestos que damos por buenos hasta que se demuestre lo contrario.
+### Entregable
 
-- **Restricciones**: _[VERIFICAR]_
-- **Supuestos**: _[VERIFICAR]_
-
----
-
-## 10. Riesgos estratégicos
-
-> Lo que podría desviarnos del norte. A nivel de proyecto, no de implementación (esos van en cada spec).
-
-| Riesgo | Probabilidad | Impacto | Mitigación |
-|---|---|---|---|
-| _[VERIFICAR]_ | Baja/Media/Alta | Bajo/Medio/Alto | _(plan)_ |
+*[VERIFICAR] Qué se puede hacer al cerrar la fase.*
 
 ---
 
-## 11. Historial de revisiones
+## Fase 1 — MVP funcional
 
-> El registro de cómo ha evolucionado la dirección del proyecto. Cada cambio relevante de la visión añade una fila (lo hace `/vision` o tú a mano). **Nunca se borran filas**: son la memoria de por qué el norte es como es hoy.
+### Objetivo
 
-| Revisión | Fecha | Autor | Qué cambió y por qué |
-|---|---|---|---|
-| v1 | _(YYYY-MM-DD)_ | _(autor)_ | Creación inicial de la visión. |
+*[VERIFICAR]*
+
+### Sub-fases sugeridas
+
+#### 1.0 Inicialización
+
+* [ ] *[VERIFICAR]*
+
+#### 1.1 Núcleo funcional
+
+* [ ] *[VERIFICAR]*
+
+#### 1.2 Persistencia
+
+* [ ] *[VERIFICAR]*
+
+#### 1.3 Herramientas operativas
+
+* [ ] *[VERIFICAR]*
+
+#### 1.4 Definition of Done
+
+* [ ] *[VERIFICAR — criterio chequeable]*
+* [ ] *[VERIFICAR — criterio chequeable]*
+* [ ] *[VERIFICAR — criterio chequeable]*
+
+### Entregable
+
+*[VERIFICAR]*
+
+### Reusar de repos
+
+* *[VERIFICAR]*
+
+### Mitigaciones relevantes
+
+* *[VERIFICAR]*
 
 ---
 
-## 12. Directrices estratégicas e inventarios de specs
+## Fase 2 — Escalabilidad y persistencia
 
-> Tres subsecciones que cierran el flujo spec-driven con la visión:
-> - **§12.1** codifica el **norte no-negociable** como reglas citables `DV-NN`. Solo se editan con `/vision`.
-> - **§12.2** mantiene el **inventario de specs creadas** con `/spec` (auto-añadido por el comando con confirmación humana).
-> - **§12.3** mantiene el **backlog de ideas para futuras specs** (auto-extraídas por `/spec` y `/implement-spec` con confirmación humana).
+### Objetivo
+
+*[VERIFICAR]*
+
+### Capacidades previstas
+
+#### 2.0 Arquitectura base
+
+* *[VERIFICAR]*
+
+#### 2.1 Optimización
+
+* *[VERIFICAR]*
+
+#### 2.2 Persistencia avanzada
+
+* *[VERIFICAR]*
+
+#### 2.3 Automatización
+
+* *[VERIFICAR]*
+
+#### 2.4 Definition of Done
+
+* [ ] *[VERIFICAR]*
+* [ ] *[VERIFICAR]*
+
+### Entregable
+
+*[VERIFICAR]*
+
+---
+
+## Fase 3 — Producto avanzado
+
+### Objetivo
+
+*[VERIFICAR]*
+
+### Capacidades previstas
+
+* *[VERIFICAR]*
+* *[VERIFICAR]*
+* *[VERIFICAR]*
+
+### Entregable
+
+*[VERIFICAR]*
+
+---
+
+## Fase 4 — Pulido y producción
+
+### Objetivo
+
+*[VERIFICAR]*
+
+### Capacidades previstas
+
+* *[VERIFICAR]*
+* *[VERIFICAR]*
+* *[VERIFICAR]*
+
+### Entregable
+
+*[VERIFICAR]*
+
+---
+
+# 5. Filosofía de arquitectura y adjudicación
+
+> Sección opcional pero recomendada para proyectos complejos.
 >
-> Para entender el sistema completo (cómo se entrelazan con las **directrices tácticas** `D-NN` de [`STATE.md`](STATE.md) §5.5), lee `CLAUDE.md` sección "Documentación viva".
-
-### 12.1 Directrices estratégicas vigentes
-
-> Son **reglas de norte** que toda spec del proyecto debe respetar mientras estén vigentes. Distintas de las directrices tácticas de [`STATE.md`](STATE.md) §5.5 (arquitectura, calidad, producto y backlog concreto): las estratégicas codifican lo **no-negociable** del producto y solo se editan con `/vision`. Cada una tiene ID citable `DV-NN`. Las specs declaran en su frontmatter (`directives_followed`) qué `DV-NN` honran.
+> Aquí se documentan:
 >
-> **Cómo rellenarla**: extrae directrices estratégicas de los principios (§6), no-objetivos (§5) y restricciones (§9) ya definidos. Empieza con 3-5 directrices que codifiquen lo realmente no-negociable; ampliar después.
+> * límites entre lógica determinista y heurística,
+> * responsabilidades de cada capa,
+> * invariantes importantes,
+> * contratos conceptuales del sistema.
 
-| ID | Origen | Directriz | Estado |
-|---|---|---|---|
-| _(vacío — añade tus primeras directrices estratégicas tras tener objetivos y principios estables)_ | | | |
+## 5.1 Separación de responsabilidades
 
-### 12.2 Ideas de specs registradas
+| Responsabilidad | Sistema       |
+| --------------- | ------------- |
+| *[VERIFICAR]*   | *[VERIFICAR]* |
+| *[VERIFICAR]*   | *[VERIFICAR]* |
 
-> Inventario de specs creadas con `/spec`. Lo mantiene **automáticamente** el comando con confirmación humana (paso 7.5 de `/spec`). Cada entrada se actualiza a `Implemented` cuando `/implement-spec` cierra la spec (paso 7f, confirmación humana). La sección **se rellena hacia adelante** — no se reescriben entradas pasadas, quedan como histórico.
->
-> Formato canónico de cada entrada:
-> ```
-> - **NNNN — `<slug>`** _(estado: Draft|Approved|Implemented, registrado: YYYY-MM-DD)_ — `<resumen 1 línea desde la sección 1 de la spec>`. Avanza: `<lista de vision_refs>`. _Implementada en: <hash>|pendiente._
-> ```
+---
 
-- _(vacío — primera entrada se añadirá con la próxima spec creada vía `/spec` tras la convención)_
+## 5.2 Invariantes
 
-### 12.3 Ideas para futuras specs (sin spec asociada todavía)
+* *[VERIFICAR]*
+* *[VERIFICAR]*
+* *[VERIFICAR]*
 
-> Backlog vivo de ideas que **emergen durante el flujo spec-driven** y aún no son spec. Las extraen automáticamente:
-> - `/spec` paso 7.6 — escanea las secciones 4 (Alternativas consideradas), 7 (Compatibilidad y migración), 8 (Riesgos y mitigaciones) y 9 (Notas y enlaces) de la spec recién creada buscando menciones tipo "se difiere a spec futura", "queda como spec candidata", "post-implementación".
-> - `/implement-spec` paso 7c.bis — escanea la sección 10 (Decisiones durante la implementación) de la spec implementada buscando menciones equivalentes.
->
-> Ambos comandos **proponen** las ideas con confirmación humana; **nunca** inventan ideas que no estén en la spec. Cuando una idea se consolida en una spec real, `/spec` la marca `consolidada en NNNN-<slug>` con confirmación. **Nunca se borran** — quedan como histórico.
->
-> Formato canónico de cada entrada:
-> ```
-> - **`<slug-tentativo>`** _(propuesta por spec NNNN el YYYY-MM-DD)_ — `<motivación 1 línea>`. Estado: propuesta | consolidada en NNNN-<slug>.
-> ```
+---
 
-- _(vacío — se rellena cuando alguna spec mencione trabajo diferido a futuras specs)_
+# 6. Riesgos, mitigaciones y anti-patrones
+
+> Lista de problemas conocidos que podrían degradar el producto si no se controlan.
+
+| Riesgo        | Impacto | Mitigación |
+| ------------- | ------- | ---------- |
+| *[VERIFICAR]* |         |            |
+
+---
+
+## 6.1 Anti-patrones explícitos
+
+> Cosas que parecen buena idea pero el proyecto decide evitar deliberadamente.
+
+* *[VERIFICAR]*
+* *[VERIFICAR]*
+* *[VERIFICAR]*
+
+---
+
+# 7. Coste, rendimiento y sostenibilidad
+
+> Especialmente importante si hay IA, APIs externas o infraestructura costosa.
+
+| Área          | Coste esperado | Estrategia |
+| ------------- | -------------- | ---------- |
+| *[VERIFICAR]* |                |            |
+
+---
+
+## 7.1 Objetivos operativos
+
+* *[VERIFICAR] latencia*
+* *[VERIFICAR] coste por usuario*
+* *[VERIFICAR] throughput*
+* *[VERIFICAR] caching*
+* *[VERIFICAR] degradación graceful*
+
+---
+
+# 8. Operación y mantenimiento
+
+## 8.1 Filosofía de specs
+
+> Cómo se espera que interactúen `/vision`, `/spec`, `/implement-spec` y `STATE.md`.
+
+*[VERIFICAR]*
+
+---
+
+## 8.2 Política de evolución
+
+* Qué decisiones requieren cambiar VISION.
+* Qué decisiones solo afectan STATE.
+* Cuándo se crea una nueva spec.
+* Cuándo se reemplaza una directriz.
+
+*[VERIFICAR]*
+
+---
+
+# 9. Riesgos estratégicos
+
+> Riesgos a nivel de producto o negocio.
+
+| Riesgo        | Probabilidad    | Impacto         | Mitigación    |
+| ------------- | --------------- | --------------- | ------------- |
+| *[VERIFICAR]* | Baja/Media/Alta | Bajo/Medio/Alto | *[VERIFICAR]* |
+
+---
+
+# 10. Decisiones abiertas
+
+> Preguntas estratégicas todavía no cerradas.
+
+| Tema          | Estado  | Próximo paso  |
+| ------------- | ------- | ------------- |
+| *[VERIFICAR]* | Abierto | *[VERIFICAR]* |
+
+---
+
+# 11. Historial de revisiones
+
+> Registro de cómo ha evolucionado la visión del proyecto.
+
+| Revisión | Fecha          | Autor     | Qué cambió y por qué           |
+| -------- | -------------- | --------- | ------------------------------ |
+| v1       | *(YYYY-MM-DD)* | *(autor)* | Creación inicial de la visión. |
+
+---
+
+# 12. Directrices estratégicas e inventarios de specs
+
+> Esta sección conecta el norte estratégico con el flujo spec-driven.
+
+---
+
+## 12.1 Directrices estratégicas vigentes
+
+> Reglas de norte citables `DV-NN`.
+
+| ID    | Origen        | Directriz     | Estado  |
+| ----- | ------------- | ------------- | ------- |
+| DV-01 | *[VERIFICAR]* | *[VERIFICAR]* | Vigente |
+
+---
+
+## 12.2 Ideas de specs registradas
+
+> Inventario histórico de specs creadas vía `/spec`.
+
+Formato canónico:
+
+```md
+- **NNNN — `<slug>`** _(estado: Draft|Approved|Implemented, registrado: YYYY-MM-DD)_ — `<resumen corto>`. Avanza: `<vision_refs>`. _Implementada en: <hash>|pendiente._
+```
+
+* *(vacío)*
+
+---
+
+## 12.3 Ideas para futuras specs (sin spec asociada todavía)
+
+> Backlog de ideas emergentes detectadas durante el flujo spec-driven.
+
+Formato canónico:
+
+```md
+- **`<slug-tentativo>`** _(propuesta por spec NNNN el YYYY-MM-DD)_ — `<motivación>`. Estado: propuesta | consolidada en NNNN-<slug>.
+```
+
+* *(vacío)*
