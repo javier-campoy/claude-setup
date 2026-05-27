@@ -125,3 +125,50 @@ _[VERIFICAR] Escribe aquí la frase-norte del proyecto._
 | Revisión | Fecha | Autor | Qué cambió y por qué |
 |---|---|---|---|
 | v1 | _(YYYY-MM-DD)_ | _(autor)_ | Creación inicial de la visión. |
+
+---
+
+## 12. Directrices estratégicas e inventarios de specs
+
+> Tres subsecciones que cierran el flujo spec-driven con la visión:
+> - **§12.1** codifica el **norte no-negociable** como reglas citables `DV-NN`. Solo se editan con `/vision`.
+> - **§12.2** mantiene el **inventario de specs creadas** con `/spec` (auto-añadido por el comando con confirmación humana).
+> - **§12.3** mantiene el **backlog de ideas para futuras specs** (auto-extraídas por `/spec` y `/implement-spec` con confirmación humana).
+>
+> Para entender el sistema completo (cómo se entrelazan con las **directrices tácticas** `D-NN` de [`STATE.md`](STATE.md) §5.5), lee `CLAUDE.md` sección "Documentación viva".
+
+### 12.1 Directrices estratégicas vigentes
+
+> Son **reglas de norte** que toda spec del proyecto debe respetar mientras estén vigentes. Distintas de las directrices tácticas de [`STATE.md`](STATE.md) §5.5 (arquitectura, calidad, producto y backlog concreto): las estratégicas codifican lo **no-negociable** del producto y solo se editan con `/vision`. Cada una tiene ID citable `DV-NN`. Las specs declaran en su frontmatter (`directives_followed`) qué `DV-NN` honran.
+>
+> **Cómo rellenarla**: extrae directrices estratégicas de los principios (§6), no-objetivos (§5) y restricciones (§9) ya definidos. Empieza con 3-5 directrices que codifiquen lo realmente no-negociable; ampliar después.
+
+| ID | Origen | Directriz | Estado |
+|---|---|---|---|
+| _(vacío — añade tus primeras directrices estratégicas tras tener objetivos y principios estables)_ | | | |
+
+### 12.2 Ideas de specs registradas
+
+> Inventario de specs creadas con `/spec`. Lo mantiene **automáticamente** el comando con confirmación humana (paso 7.5 de `/spec`). Cada entrada se actualiza a `Implemented` cuando `/implement-spec` cierra la spec (paso 7f, confirmación humana). La sección **se rellena hacia adelante** — no se reescriben entradas pasadas, quedan como histórico.
+>
+> Formato canónico de cada entrada:
+> ```
+> - **NNNN — `<slug>`** _(estado: Draft|Approved|Implemented, registrado: YYYY-MM-DD)_ — `<resumen 1 línea desde la sección 1 de la spec>`. Avanza: `<lista de vision_refs>`. _Implementada en: <hash>|pendiente._
+> ```
+
+- _(vacío — primera entrada se añadirá con la próxima spec creada vía `/spec` tras la convención)_
+
+### 12.3 Ideas para futuras specs (sin spec asociada todavía)
+
+> Backlog vivo de ideas que **emergen durante el flujo spec-driven** y aún no son spec. Las extraen automáticamente:
+> - `/spec` paso 7.6 — escanea las secciones 4 (Alternativas consideradas), 7 (Compatibilidad y migración), 8 (Riesgos y mitigaciones) y 9 (Notas y enlaces) de la spec recién creada buscando menciones tipo "se difiere a spec futura", "queda como spec candidata", "post-implementación".
+> - `/implement-spec` paso 7c.bis — escanea la sección 10 (Decisiones durante la implementación) de la spec implementada buscando menciones equivalentes.
+>
+> Ambos comandos **proponen** las ideas con confirmación humana; **nunca** inventan ideas que no estén en la spec. Cuando una idea se consolida en una spec real, `/spec` la marca `consolidada en NNNN-<slug>` con confirmación. **Nunca se borran** — quedan como histórico.
+>
+> Formato canónico de cada entrada:
+> ```
+> - **`<slug-tentativo>`** _(propuesta por spec NNNN el YYYY-MM-DD)_ — `<motivación 1 línea>`. Estado: propuesta | consolidada en NNNN-<slug>.
+> ```
+
+- _(vacío — se rellena cuando alguna spec mencione trabajo diferido a futuras specs)_

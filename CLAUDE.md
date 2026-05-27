@@ -132,7 +132,7 @@ uv run ruff check . --fix && uv run ruff format . && uv run mypy src && uv run p
 La documentación de este repo NO se publica como sitio web. Son ficheros Markdown plano dentro de `docs/`, leídos desde el editor o desde GitHub. Cinco tipos de contenido:
 
 - **`docs/VISION.md`** — El **norte del proyecto**: hacia dónde vamos y por qué (propósito, objetivos, no-objetivos, principios rectores, temas estratégicos). Es **prescriptivo y de propiedad humana**, evoluciona deliberadamente (con `/vision`) y se construye **antes** de la primera spec. No lo regenera `/state`. A diferencia de `STATE.md` (presente, autogenerado), `VISION.md` define el futuro y es la referencia contra la que se justifica toda spec.
-- **`docs/STATE.md`** — Estado actual del repo: arquitectura, módulos, stack, ADRs (decisiones técnicas) y tabla de specs activas/implementadas. Lo regenera Claude tras cambios en `src/`. Su sección 1 enlaza a `VISION.md` (no la duplica).
+- **`docs/STATE.md`** — Estado actual del repo: arquitectura, módulos, stack, ADRs (decisiones técnicas), tabla de specs activas/implementadas y **§5.5 "Directrices vigentes para próximas specs"** (tabla de IDs `D-NN` citables que cada nueva spec debe honrar). Lo regenera Claude tras cambios en `src/`, **excepto §5.5 que se preserva** (es contenido humano-curado + auto-añadidos por `/implement-spec` con confirmación). Su sección 1 enlaza a `VISION.md` (no la duplica).
 - **`docs/changelog.md`** — Historial cronológico (formato [Keep a Changelog](https://keepachangelog.com/es/1.1.0/)). Sección `[No publicado]` se rellena tras cada cambio.
 - **`docs/specs/NNNN-slug.md`** — Una spec por unidad de cambio. Frontmatter con estado: `Draft` → `Approved` → `Implemented` (o `Rejected`). El proyecto es **spec-driven**: cualquier cambio no trivial empieza con una spec aprobada.
 - **`docs/modules/<modulo>.md`** — Documentación detallada de cada módulo Python en `src/`: API pública, responsabilidad, dependencias internas y ejemplos de uso. Un fichero por módulo, generado y mantenido automáticamente por Claude.
@@ -144,7 +144,12 @@ La documentación de este repo NO se publica como sitio web. Son ficheros Markdo
                                  → crea/rellena docs/VISION.md (el norte)
                                  → la revisas y ajustas; evoluciona luego con /vision
 1. /spec "qué quieres"          → verifica que la visión existe (si no, te manda a /vision)
+                                 → lee VISION (§4 objetivos + §12.1 directrices estratégicas
+                                   + §12.2 ideas registradas + §12.3 ideas futuras)
+                                   y STATE (§5.5 directrices tácticas)
                                  → crea docs/specs/NNNN-slug.md (Draft), alineada con el norte
+                                 → en la spec: cita directrices D-NN / DV-NN que cumple/cierra/abre
+                                   y objetivos de VISION §4 que cierra
                                  → clasifica la spec (trivial vs no trivial)
                                  → si es no trivial, encadena AUTOMÁTICAMENTE /spec-review
                                    (Opus, subagente spec-architect)
@@ -155,12 +160,23 @@ La documentación de este repo NO se publica como sitio web. Son ficheros Markdo
                                        · veredicto: GO | GO-WITH-CHANGES | RETHINK
                                  → si es trivial, no consume Opus
                                  → opt-out: pasar `--skip-review` en el argumento de /spec
+                                 → propone (con confirmación humana) añadir entrada en
+                                   VISION §12.2 "Ideas de specs registradas"
+                                 → propone (con confirmación humana) consolidar ideas
+                                   previas de §12.3 que cubre + extraer ideas nuevas
+                                   para futuras specs (secciones 4/7/8/9 de la spec)
 2. revisas, editas, apruebas    → cambias status a Approved
                                  (no apruebes si el veredicto fue RETHINK)
 3. /implement-spec docs/specs/NNNN-slug.md
                                  → Claude implementa siguiendo la spec (en Sonnet)
                                  → marca como Implemented
-                                 → actualiza STATE.md + changelog.md
+                                 → actualiza STATE.md + changelog.md + modules/
+                                 → cierra directrices D-NN declaradas; propone nuevas con confirmación
+                                 → propone (con confirmación humana) marcar [x] los objetivos
+                                   de VISION §4 que la spec cierra y mover la entrada de
+                                   §12.2 a Implemented (operaciones de cierre, nunca estructurales)
+                                 → propone (con confirmación humana) añadir a §12.3 las
+                                   ideas para futuras specs detectadas en sección 10
                                  → hace commit y push automáticamente
 ```
 
@@ -230,8 +246,17 @@ uv run pre-commit install --hook-type pre-commit --hook-type commit-msg --hook-t
 ### Reglas para Claude sobre la doc viva
 
 - **La visión (`docs/VISION.md`) es el norte.** Toda spec debe poder justificarse contra ella. `/spec` exige que esté rellenada; si no lo está, deriva al usuario a `/vision` antes de crear specs.
-- **NUNCA regeneres ni reescribas `docs/VISION.md` desde `/state` ni automáticamente.** Es de propiedad humana. Solo se edita con `/vision` (modo evolucionar) y registrando una entrada en su Historial de revisiones. Ante cambios grandes de rumbo, propón y espera confirmación.
+- **VISION es de propiedad humana — pero tiene excepciones acotadas.** La regla general sigue siendo: ningún comando edita VISION libremente. Solo se admiten estas operaciones automatizadas, **todas con confirmación humana explícita** antes de aplicar:
+  - **Aditiva a §12.2 (`/spec` paso 7.5)**: añadir entrada en `§12.2 "Ideas de specs registradas"` con id, slug, fecha y resumen 1-línea de la spec recién creada.
+  - **Aditiva + de cierre en §12.3 (`/spec` paso 7.6 y `/implement-spec` paso 7c.bis)**: añadir ideas para futuras specs en `§12.3 "Ideas para futuras specs"` extraídas de la spec actual. `/spec` también puede **marcar como `consolidada en NNNN-<slug>`** una idea propuesta que la nueva spec cubre.
+  - **De cierre en §4/§12.2 (`/implement-spec` pasos 7e/7f)**: marcar como `[x]` los objetivos del roadmap `§4` que la spec implementada cierra completamente (no solo avanza) y cambiar la entrada correspondiente de `§12.2` a `Implemented` con el hash del commit. Solo cambia los checkboxes y la nota de implementación, nunca el texto del objetivo.
+  - **Cualquier otro cambio en VISION** (principios, objetivos nuevos, no-objetivos, temas estratégicos, §12.1 directrices estratégicas) **requiere `/vision`** y revisión humana. `/state` no edita VISION nunca.
 - Si detectas que el código o una spec contradicen la visión (persiguen un no-objetivo, violan un principio), **NO lo resuelvas en silencio**: avisa y sugiere `/vision` para actualizar el norte o replantear el trabajo.
+- **Directrices vigentes para próximas specs** (`docs/STATE.md` §5.5):
+  - Cada nueva spec debe declarar en su frontmatter (`directives_followed`, `directives_closed`, `directives_opened`) y en su subsección "Directrices que esta spec cumple, cierra o abre" qué directrices `D-NN` (de §5.5) y/o `DV-NN` (de VISION §12.1) honra, cierra o propone añadir.
+  - `/spec` exige citas; `/implement-spec` cierra las declaradas y propone (con confirmación) añadir las nuevas.
+  - `/state` **preserva** §5.5 íntegra — no la regenera ni reordena.
+  - Las directrices **estratégicas** (norte) viven en VISION §12.1 con prefijo `DV-NN` y solo se editan con `/vision`. Las **tácticas** (arquitectura, calidad, producto, backlog) viven en STATE §5.5 con prefijo `D-NN`.
 - Tras CUALQUIER cambio no trivial en `src/`, **debes** actualizar `docs/STATE.md`, `docs/changelog.md` y el `docs/modules/<modulo>.md` afectado ANTES de terminar la sesión. El hook lo va a forzar; mejor hazlo proactivamente.
 - Si implementas una spec, marca su frontmatter `status: Implemented` y `implemented_in: <commit>` y muévela en STATE.md de "Activas" a "Implementadas".
 - Si tomas una decisión técnica relevante (cambio de librería, cambio de patrón arquitectónico), **propón** un ADR en `STATE.md` sección 4. NO lo añadas sin confirmación humana.

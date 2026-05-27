@@ -103,6 +103,20 @@ _Diagramas mentales de los flujos principales (request → handler → DB, etc.)
 |---|---|---|---|
 | _(vacío)_ | | | |
 
+### Directrices vigentes para próximas specs
+
+> **Qué son**: reglas tácticas que las nuevas specs deben honrar para mantener coherencia con la arquitectura, los ADRs vigentes y las decisiones de producto. Cada directriz tiene un **ID citable** (`D-NN`) que las specs declaran en su frontmatter (`directives_followed` / `directives_closed`) y en la subsección "Directrices que esta spec cumple, cierra o abre".
+>
+> **Cómo se mantiene**: `/spec` exige que la nueva spec cite las directrices que honra. `/implement-spec` propone en el cierre qué directrices quedan cerradas (las puntuales) y qué directrices nuevas emergen (con confirmación humana antes de añadirlas). `/state` **preserva** esta tabla — no la regenera. Las directrices estratégicas (norte del proyecto) viven en `VISION.md` §12.1 con prefijo `DV-NN` y solo se editan con `/vision`.
+>
+> **Estado**: `vigente` (debe cumplirse) · `cerrada` (cumplida por la spec X; queda como histórico) · `derogada` (superseded por ADR / spec posterior; ver nota).
+>
+> **Cómo rellenar esta tabla**: ve añadiendo directrices conforme tomes decisiones técnicas (cada nuevo ADR suele abrir una directriz `D-NN` derivada), conforme cierres specs (las del backlog se cierran al implementarse) y conforme `/implement-spec` proponga directrices emergentes. Empieza con pocas, focalízalas en lo realmente vinculante.
+
+| ID | Origen | Ámbito | Directriz | Estado |
+|---|---|---|---|---|
+| _(vacío — añade tu primera directriz cuando tomes la primera decisión técnica vinculante)_ | | | | |
+
 ---
 
 ## 6. Estado del codebase
