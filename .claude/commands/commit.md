@@ -11,8 +11,8 @@ Pasos:
 3. **Gate de calidad de código**: ejecuta `uv run ruff check . && uv run pytest -q`. Si algo falla, **NO** commitees: reporta los fallos y para.
 4. **Auditoría de documentación** (Capa 1, determinista + Capa 2, remediación):
    1. Ejecuta el gate de cobertura sobre los módulos que vas a commitear:
-      - Si ya hay `src/*.py` en stage: `python .claude/hooks/check_doc_coverage.py --staged`.
-      - Si vas a commitear cambios de `src/` aún sin stagear: pásale esas rutas como argumentos, p. ej. `python .claude/hooks/check_doc_coverage.py src/pkg/foo.py`.
+      - Si ya hay `src/*.py` en stage: `uv run python .claude/hooks/check_doc_coverage.py --staged`.
+      - Si vas a commitear cambios de `src/` aún sin stagear: pásale esas rutas como argumentos, p. ej. `uv run python .claude/hooks/check_doc_coverage.py src/pkg/foo.py`.
    2. Si sale con **código 0**, la documentación está cubierta: pasa al paso 5.
    3. Si sale con **código ≠ 0**, **auto-remedia** los huecos que reporta (no commitees con huecos). El gate los agrupa por tipo; remedia cada tipo con su comando:
       - **Docstrings faltantes** y **`docs/modules/<modulo>.md` faltantes**: invoca la skill `/docs <fichero>` sobre cada módulo afectado (genera docstrings estilo Google en el idioma del codebase y sincroniza su `docs/modules/<modulo>.md`).

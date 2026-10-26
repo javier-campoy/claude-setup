@@ -2,10 +2,8 @@
 # Stop: bloquea si hay cambios en src/ sin actualizar docs/.
 # exit 2 hace que Claude continúe la sesión en lugar de cerrarla.
 if [ -f .claude/.cache/src-changed.flag ] && [ ! -f .claude/.cache/docs-touched.flag ]; then
-    echo ""
-    echo "⚠️  Hay cambios en src/ sin actualizar docs/."
-    echo "   Ejecuta /state y /changelog antes de terminar."
-    echo ""
+    # Con exit 2, Claude Code solo devuelve a Claude lo que va por stderr.
+    echo "⚠️  Hay cambios en src/ sin actualizar docs/. Ejecuta /state y /changelog antes de terminar." >&2
     rm -f .claude/.cache/src-changed.flag
     exit 2
 fi
