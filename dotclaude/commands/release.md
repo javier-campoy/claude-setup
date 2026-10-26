@@ -40,11 +40,11 @@ Prepara y publica la versión $ARGUMENTS siguiendo el flujo de release del proye
    ```
    git push && git push --tags
    ```
-   El workflow `release.yml` de GitHub Actions creará el Release automáticamente.
+   El pipeline de `.gitlab-ci.yml` (jobs `build` y `release`) creará el GitLab Release automáticamente.
 
 8. **Reporta**:
    - Versión publicada y hash del commit.
-   - Recuerda al usuario revisar que el workflow de release pase en GitHub Actions.
+   - Recuerda al usuario revisar que el pipeline del tag pase en GitLab (`glab ci status` si `glab` está instalado, o en *Build → Pipelines*).
 
 ## Reglas
 

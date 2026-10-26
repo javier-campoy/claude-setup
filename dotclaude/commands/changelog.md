@@ -30,7 +30,7 @@ Actualiza `docs/changelog.md` con entradas para los cambios recientes.
    - Estilo: imperativo, conciso, en el mismo idioma que el resto del changelog.
    - Ejemplo: `- Añadir parser de URLs con validación estricta de esquema.`
    - Si el cambio implementa una spec, referenciarla: `(spec [0001](specs/0001-parser-de-urls.md))`.
-   - Si el commit menciona issue/PR, referenciarlo: `(#42)`.
+   - Si el commit menciona un issue o merge request de GitLab, referenciarlo: `(#42)` para issues, `(!42)` para merge requests.
 
 5. **Edita `docs/changelog.md`**:
    - Inserta las entradas bajo `[No publicado]` en la subsección correcta.

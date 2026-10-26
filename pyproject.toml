@@ -34,8 +34,8 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/usuario/mi-paquete"
-Issues = "https://github.com/usuario/mi-paquete/issues"
+Homepage = "https://code.mahitahi.global.fujitsu.com/grupo/mi-paquete"
+Issues = "https://code.mahitahi.global.fujitsu.com/grupo/mi-paquete/-/issues"
 
 # -----------------------------------------------------------------------------
 # Build system

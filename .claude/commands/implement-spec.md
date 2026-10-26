@@ -156,10 +156,10 @@ Implementa la spec indicada en $ARGUMENTS siguiendo el flujo spec-driven.
 
 9. **Cierra el ciclo**:
    - Informa: "El código está commiteado y pusheado en `develop`."
-   - Recuerda: **CI debe pasar** (`ci.yml` en verde) en ese push a `develop`.
+   - Recuerda: **CI debe pasar** (pipeline de `.gitlab-ci.yml` en verde) en ese push a `develop`.
    - Cuando la unidad de release esté completa, se integra `develop` en `main` y se usa `/release X.Y.Z` para publicar.
    - **NO integres en `main` ni publiques automáticamente**: lo decide el usuario.
-   - _Alternativa (si en el futuro se vuelve al flujo de PR): push a una rama `feat/...` y `gh pr create` hacia `main`._
+   - _Alternativa (si en el futuro se vuelve al flujo de merge requests): push a una rama `feat/...` y `glab mr create --target-branch develop`._
 
 10. **Reporta**:
     - Resumen de lo implementado.

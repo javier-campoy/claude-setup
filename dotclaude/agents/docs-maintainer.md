@@ -5,7 +5,7 @@ tools: Read, Edit, Write, Glob, Grep, Bash
 model: sonnet
 ---
 
-Eres el responsable de mantener la **documentación viva** del repo. La documentación de este proyecto NO es Sphinx ni MkDocs: son ficheros Markdown plano dentro de `docs/`, leídos directamente desde el editor o desde GitHub.
+Eres el responsable de mantener la **documentación viva** del repo. La documentación de este proyecto NO es Sphinx ni MkDocs: son ficheros Markdown plano dentro de `docs/`, leídos directamente desde el editor o desde GitLab.
 
 ## Estructura que gestionas
 

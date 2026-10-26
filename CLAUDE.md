@@ -14,7 +14,7 @@ Proyecto Python (paquete/librería). Stack moderno basado en `uv`, `ruff` y `pyt
 - **Lint + format**: [`ruff`](https://docs.astral.sh/ruff/) (sustituye a black, isort, flake8)
 - **Type checking**: `mypy` (modo estricto)
 - **Tests**: `pytest` + `pytest-cov`
-- **Documentación viva**: ficheros Markdown en `docs/` (`VISION.md`, `STATE.md`, `changelog.md`, `specs/`, `modules/`). Sin generación de sitio. Se lee desde el editor o GitHub.
+- **Documentación viva**: ficheros Markdown en `docs/` (`VISION.md`, `STATE.md`, `changelog.md`, `specs/`, `modules/`). Sin generación de sitio. Se lee desde el editor o GitLab.
 - **Pre-commit**: `pre-commit` con ruff, mypy y aviso de docs viva sin sincronizar.
 
 ## Estructura del proyecto
@@ -39,7 +39,7 @@ Proyecto Python (paquete/librería). Stack moderno basado en `uv`, `ruff` y `pyt
 ├── pyproject.toml        # Config del proyecto (deps, ruff, pytest, mypy)
 ├── .python-version       # Versión de Python pinneada
 ├── .claude/              # Comandos, subagentes, skills, hooks y settings
-└── .github/              # CI/CD (ci.yml, release.yml, dependabot.yml)
+└── .gitlab-ci.yml        # CI/CD (gate de calidad y release)
 ```
 
 > Convenciones de espejo:
@@ -107,16 +107,17 @@ uv run ruff check . --fix && uv run ruff format . && uv run mypy src && uv run p
 - **Flujo worktree** (recomendado para specs):
   1. `EnterWorktree` (o `claude --worktree`) crea un árbol aislado en una rama nueva partiendo de `origin/develop`. `.venv` y las cachés se symlinkean desde el repo principal — no se duplican.
   2. Trabajo aislado en ese worktree: commits, lint, tests, push de la rama si quieres CI/backup remoto.
-  3. **Al cerrar la rama**: merge a `develop` desde el repo principal (`git merge --no-ff feat/<slug>` o PR si lo prefieres), borra la rama local y remota, sal del worktree con `ExitWorktree` (que limpia el árbol).
+  3. **Al cerrar la rama**: merge a `develop` desde el repo principal (`git merge --no-ff feat/<slug>` o merge request si lo prefieres), borra la rama local y remota, sal del worktree con `ExitWorktree` (que limpia el árbol).
   4. `develop` → `main` sólo en `/release <versión>`.
 - Múltiples worktrees pueden coexistir (uno por spec/feature en marcha). Cada uno tiene su rama; sólo se mergean a `develop` cuando se cierran.
 
 ## CI/CD y releases
 
-- **CI** (`.github/workflows/ci.yml`): ruff + mypy + pytest en cada push a `develop`/`main` (y en cualquier PR).
+- **CI** (`.gitlab-ci.yml`, job `quality`): ruff + mypy + pytest en cada push a `develop`/`main` (y en cualquier merge request).
 - **Releases**: cuando `develop` está estable se integra en `main` y se publica con `/release <versión>` sobre `main`:
   - Bump en `pyproject.toml` + rename `[No publicado]` → `[X.Y.Z]` en changelog.
-  - `git tag vX.Y.Z` → GitHub Actions construye el paquete y crea el GitHub Release con el contenido del changelog.
+  - `git tag vX.Y.Z` → el pipeline de GitLab construye el paquete y crea el GitLab Release con el contenido del changelog.
+- **Forja**: GitLab (`code.mahitahi.global.fujitsu.com`). Para issues, merge requests y pipelines usa `glab` si está instalado, o el MCP `gitlab` de `.mcp.json`. No uses `gh`.
 - **Versionado semántico** (`MAJOR.MINOR.PATCH`):
   - `PATCH` — hotfixes y correcciones sin nueva API pública.
   - `MINOR` — features nuevas, compatibles hacia atrás.
@@ -136,7 +137,7 @@ uv run ruff check . --fix && uv run ruff format . && uv run mypy src && uv run p
 
 ## Documentación viva: cómo funciona
 
-La documentación de este repo NO se publica como sitio web. Son ficheros Markdown plano dentro de `docs/`, leídos desde el editor o desde GitHub. Cinco tipos de contenido:
+La documentación de este repo NO se publica como sitio web. Son ficheros Markdown plano dentro de `docs/`, leídos desde el editor o desde GitLab. Cinco tipos de contenido:
 
 - **`docs/VISION.md`** — El **norte del proyecto**: hacia dónde vamos y por qué (propósito, objetivos, no-objetivos, principios rectores, temas estratégicos). Es **prescriptivo y de propiedad humana**, evoluciona deliberadamente (con `/vision`) y se construye **antes** de la primera spec. No lo regenera `/state`. A diferencia de `STATE.md` (presente, autogenerado), `VISION.md` define el futuro y es la referencia contra la que se justifica toda spec.
 - **`docs/STATE.md`** — Estado actual del repo: arquitectura, módulos, stack, ADRs (decisiones técnicas), tabla de specs activas/implementadas y **§5.5 "Directrices vigentes para próximas specs"** (tabla de IDs `D-NN` citables que cada nueva spec debe honrar). Lo regenera Claude tras cambios en `src/`, **excepto §5.5 que se preserva** (es contenido humano-curado + auto-añadidos por `/implement-spec` con confirmación). Su sección 1 enlaza a `VISION.md` (no la duplica).
@@ -305,7 +306,7 @@ Las skills viven en `.claude/skills/<nombre>/SKILL.md` y Claude las carga solo c
 - `/state` — Regenera `docs/STATE.md` con la estructura, stack, métricas y specs actuales, y sincroniza los `docs/modules/*.md`.
 - `/changelog [rango]` — Añade entradas al `docs/changelog.md` para los cambios recientes.
 - `/implement-spec <ruta>` — Implementa una spec aprobada paso a paso, actualizando docs (STATE.md, changelog, modules/), haciendo commit y push al terminar.
-- `/release <versión>` — Prepara y publica una nueva versión: bump en `pyproject.toml`, actualiza changelog, crea tag `vX.Y.Z` y hace push (el workflow de GitHub Actions crea el Release).
+- `/release <versión>` — Prepara y publica una nueva versión: bump en `pyproject.toml`, actualiza changelog, crea tag `vX.Y.Z` y hace push (el pipeline de GitLab crea el Release).
 
 ## Notas y decisiones de diseño
 

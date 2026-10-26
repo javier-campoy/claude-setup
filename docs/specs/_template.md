@@ -5,7 +5,7 @@ status: Draft           # Draft | Approved | Implemented | Rejected
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
 author: "Tu nombre o handle"
-implemented_in: ""      # commit hash o PR number cuando esté Implemented
+implemented_in: ""      # commit hash o número de merge request (!NN) cuando esté Implemented
 related: []             # IDs de otras specs relacionadas: [0001, 0003]
 vision_refs: []         # objetivos/temas de docs/VISION.md que avanza: ["O2", "T1"]
 directives_followed: [] # IDs de directrices STATE §5.5 (D-NN) y/o VISION §12.1 (DV-NN) que esta spec honra
@@ -83,7 +83,7 @@ Lista verificable de qué debe ser cierto cuando se considere implementada.
 - [ ] CA1: Comportamiento X funciona en escenario Y.
 - [ ] CA2: Tests para casos límite Z.
 - [ ] CA3: Documentación de la API actualizada (docstrings).
-- [ ] CA4: CI verde — el pipeline `ci.yml` pasa en el PR de implementación.
+- [ ] CA4: CI verde — el pipeline de `.gitlab-ci.yml` pasa en el push o merge request de implementación.
 
 ## 7. Compatibilidad y migración
 

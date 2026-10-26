@@ -1,6 +1,6 @@
 # mi-paquete
 
-[![CI](https://github.com/usuario/mi-paquete/actions/workflows/ci.yml/badge.svg)](https://github.com/usuario/mi-paquete/actions/workflows/ci.yml)
+[![pipeline](https://code.mahitahi.global.fujitsu.com/grupo/mi-paquete/badges/develop/pipeline.svg)](https://code.mahitahi.global.fujitsu.com/grupo/mi-paquete/-/pipelines)
 
 > Descripción breve del proyecto.
 
@@ -80,7 +80,7 @@ claude
 # 6. git push && git push --tags
 ```
 
-El workflow `.github/workflows/release.yml` detecta el tag y crea el GitHub Release automáticamente con el contenido del changelog.
+El pipeline de `.gitlab-ci.yml` detecta el tag y crea el GitLab Release automáticamente con el contenido del changelog.
 
 ## Estructura
 
@@ -92,7 +92,7 @@ El workflow `.github/workflows/release.yml` detecta el tag y crea el GitHub Rele
 ├── pyproject.toml         # Config completa del proyecto
 ├── CLAUDE.md              # Memoria de Claude Code
 ├── .claude/               # Comandos, subagentes, hooks y settings
-└── .github/               # CI/CD (ci.yml, release.yml, dependabot)
+└── .gitlab-ci.yml         # CI/CD (gate de calidad y release)
 ```
 
 ## Licencia

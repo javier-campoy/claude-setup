@@ -1,14 +1,11 @@
 {
   "mcpServers": {
-    "_comentario_general": "Esta config se commitea con el repo. Cada miembro del equipo vera los mismos MCPs. Para activar uno, quitale el prefijo guion bajo a la clave (p.ej. _github -> github) y rellena tokens via variables de entorno. NUNCA hardcodees secretos.",
+    "_comentario_general": "Esta config se commitea con el repo. Cada miembro del equipo vera los mismos MCPs. Para activar uno, quitale el prefijo guion bajo a la clave (p.ej. _gitlab -> gitlab) y rellena tokens via variables de entorno. NUNCA hardcodees secretos.",
 
-    "_github": {
-      "_descripcion": "Acceso a issues, PRs y codigo de GitHub. Requiere GITHUB_PERSONAL_ACCESS_TOKEN.",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
-      }
+    "_gitlab": {
+      "_descripcion": "Servidor MCP integrado de GitLab: issues, merge requests, pipelines y codigo. Autentica por OAuth con tu cuenta de GitLab (ejecuta /mcp en Claude Code la primera vez). Sin tokens que gestionar.",
+      "type": "http",
+      "url": "https://code.mahitahi.global.fujitsu.com/api/v4/mcp"
     },
 
     "_context7": {

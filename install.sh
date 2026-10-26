@@ -13,13 +13,17 @@
 # Opciones (si no se pasan, se preguntan interactivamente):
 #   --author-name "<nombre>"     Nombre del autor para pyproject.toml
 #   --author-email "<email>"     Email del autor para pyproject.toml
-#   --github-user "<usuario>"    Owner de GitHub para los URLs Homepage/Issues
+#   --gitlab-namespace "<ns>"    Grupo o usuario de GitLab que aloja el repo (p.ej. sumai,
+#                                o grupo/subgrupo). Se usa en los URLs Homepage/Issues.
+#   --gitlab-host "<host>"       Host de GitLab. Default: code.mahitahi.global.fujitsu.com
 #   --no-prompt                  No preguntar; usar defaults para los flags faltantes.
+#
+# El autor por defecto se toma de `git config user.name` / `user.email`.
 #
 # Ejemplos:
 #   ./install.sh ~/proyectos/mi-app mi_app
 #   ./install.sh ~/proyectos/foo foo_tools foo-tools \
-#       --author-name "Ada Lovelace" --author-email ada@example.com --github-user ada
+#       --author-name "LOVELACE, ADA" --author-email ada.lovelace@fujitsu.com --gitlab-namespace sumai
 # ============================================================================
 
 set -euo pipefail
@@ -33,14 +37,16 @@ usage() {
 POSITIONAL=()
 AUTHOR_NAME=""
 AUTHOR_EMAIL=""
-GITHUB_USER=""
+GITLAB_NAMESPACE=""
+GITLAB_HOST=""
 NO_PROMPT=0
 
 while [ $# -gt 0 ]; do
     case "$1" in
         --author-name)  AUTHOR_NAME="${2:-}"; shift 2 ;;
         --author-email) AUTHOR_EMAIL="${2:-}"; shift 2 ;;
-        --github-user)  GITHUB_USER="${2:-}"; shift 2 ;;
+        --gitlab-namespace) GITLAB_NAMESPACE="${2:-}"; shift 2 ;;
+        --gitlab-host)  GITLAB_HOST="${2:-}"; shift 2 ;;
         --no-prompt)    NO_PROMPT=1; shift ;;
         -h|--help)      usage 0 ;;
         --) shift; while [ $# -gt 0 ]; do POSITIONAL+=("$1"); shift; done ;;
@@ -70,9 +76,10 @@ prompt_default() {
     printf -v "$var_name" '%s' "${answer:-$default}"
 }
 
-prompt_default AUTHOR_NAME  "Autor (nombre)"     "Tu Nombre"
-prompt_default AUTHOR_EMAIL "Autor (email)"      "tu@email.com"
-prompt_default GITHUB_USER  "Usuario de GitHub"  "usuario"
+prompt_default AUTHOR_NAME      "Autor (nombre)"     "$(git config user.name 2>/dev/null || echo "Tu Nombre")"
+prompt_default AUTHOR_EMAIL     "Autor (email)"      "$(git config user.email 2>/dev/null || echo "tu@email.com")"
+prompt_default GITLAB_NAMESPACE "Grupo de GitLab"    "grupo"
+prompt_default GITLAB_HOST      "Host de GitLab"     "code.mahitahi.global.fujitsu.com"
 
 echo "=============================================="
 echo " Despliegue del kit Claude Code para Python"
@@ -82,7 +89,7 @@ echo "Destino:        $TARGET_DIR"
 echo "Paquete:        $PACKAGE_NAME (Python con underscores)"
 echo "Proyecto:       $PROJECT_NAME (PyPI con guiones)"
 echo "Autor:          $AUTHOR_NAME <$AUTHOR_EMAIL>"
-echo "GitHub user:    $GITHUB_USER"
+echo "GitLab:         $GITLAB_HOST/$GITLAB_NAMESPACE/$PROJECT_NAME"
 echo ""
 
 mkdir -p "$TARGET_DIR"
@@ -98,7 +105,7 @@ INCLUDE=(
     ".pre-commit-config.yaml"
     ".mcp.json"
     ".claude"
-    ".github"
+    ".gitlab-ci.yml"
     "docs"
 )
 
@@ -155,14 +162,15 @@ ESC_PKG=$(sed_escape "$PACKAGE_NAME")
 ESC_PRJ=$(sed_escape "$PROJECT_NAME")
 ESC_AUTHOR=$(sed_escape "$AUTHOR_NAME")
 ESC_EMAIL=$(sed_escape "$AUTHOR_EMAIL")
-ESC_GH=$(sed_escape "$GITHUB_USER")
+ESC_NS=$(sed_escape "$GITLAB_NAMESPACE")
+ESC_HOST=$(sed_escape "$GITLAB_HOST")
 
 # El orden importa: 'mi_paquete' antes que 'mi-paquete' (no hay solape, pero
-# 'usuario' debe sustituirse antes que cualquier ocurrencia accidental).
+# el URL de GitLab debe sustituirse antes que cualquier ocurrencia accidental).
 SED_SCRIPT="
+s|code.mahitahi.global.fujitsu.com/grupo/|$ESC_HOST/$ESC_NS/|g
 s|mi_paquete|$ESC_PKG|g
 s|mi-paquete|$ESC_PRJ|g
-s|github.com/usuario/|github.com/$ESC_GH/|g
 s|Tu Nombre|$ESC_AUTHOR|g
 s|tu@email.com|$ESC_EMAIL|g
 "
@@ -239,6 +247,10 @@ if [ ! -d ".git" ]; then
 else
     echo "  · ya existe .git, salto"
 fi
+
+# En la red de Fujitsu la inspección TLS usa una CA corporativa que está en el
+# almacén del sistema pero no en el que uv trae de serie.
+export UV_SYSTEM_CERTS=1
 
 echo ""
 echo "Instalando dependencias con uv..."

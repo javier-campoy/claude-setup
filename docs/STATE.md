@@ -76,7 +76,7 @@ _Diagramas mentales de los flujos principales (request → handler → DB, etc.)
 - **Estado**: Aceptada
 - **Contexto**: Necesitamos trazabilidad de los cambios y un mecanismo para alinear con Claude antes de implementar.
 - **Decisión**: Cada cambio no trivial empieza con una spec en `docs/specs/` que se aprueba antes de tocar código.
-- **Alternativas**: Solo issues de GitHub, RFCs en una wiki externa, nada formal.
+- **Alternativas**: Solo issues de GitLab, RFCs en una wiki externa, nada formal.
 - **Consecuencias**: Más overhead inicial pero mucho mejor alineamiento humano-IA y mejor histórico.
 
 <!-- Claude: añade aquí nuevas ADRs cuando se tomen decisiones técnicas relevantes. Numéralas secuencialmente. -->
@@ -125,7 +125,7 @@ _Diagramas mentales de los flujos principales (request → handler → DB, etc.)
 
 - **Líneas de código** (src/): _(la rellena Claude con `find src -name '*.py' \| xargs wc -l \| tail -1`)_
 - **Cobertura de tests**: _(la rellena Claude con `uv run pytest --cov=src` si está disponible)_
-- **Issues conocidos**: _ver `docs/specs/` con estado `Draft` o GitHub Issues._
+- **Issues conocidos**: _ver `docs/specs/` con estado `Draft` o los issues de GitLab._
 
 ### Salud
 
@@ -147,10 +147,13 @@ _Qué viene a continuación. Suele ser un resumen de las specs en estado `Approv
 
 ### Pipelines
 
-| Workflow | Trigger | Qué hace |
+Definidos en [`.gitlab-ci.yml`](../.gitlab-ci.yml):
+
+| Job | Trigger | Qué hace |
 |---|---|---|
-| [`ci.yml`](.github/workflows/ci.yml) | Push / PR a `main` | ruff check · ruff format · mypy · pytest + cobertura |
-| [`release.yml`](.github/workflows/release.yml) | Tag `v*.*.*` | Gate de calidad · `uv build` · GitHub Release con changelog |
+| `quality` | Merge request · push a `develop`/`main` · tag `v*.*.*` | ruff check · ruff format · mypy · pytest + cobertura |
+| `build` | Tag `v*.*.*` | `uv build` (artefactos en `dist/`) |
+| `release` | Tag `v*.*.*` | GitLab Release con la sección del changelog |
 
 ### Estrategia de versioning
 
@@ -162,7 +165,7 @@ _Qué viene a continuación. Suele ser un resumen de las specs en estado `Approv
 | `MINOR` | Features nuevas, compatibles hacia atrás |
 | `MAJOR` | Cambios breaking de API |
 
-**Flujo de release**: specs implementadas y mergeadas a `main` → `/release X.Y.Z` → tag → GitHub Release automático.
+**Flujo de release**: specs implementadas y mergeadas a `main` → `/release X.Y.Z` → tag → GitLab Release automático.
 
 ### Historial de releases
 

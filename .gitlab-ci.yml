@@ -1,0 +1,115 @@
+# CI/CD del proyecto en GitLab.
+#
+#   - Merge requests y push a develop/main: gate de calidad (ruff, mypy, pytest).
+#   - Tag vX.Y.Z: gate de calidad, `uv build` y GitLab Release con las notas
+#     de la sección [X.Y.Z] de docs/changelog.md.
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    # Evita pipelines duplicados: si la rama tiene un MR abierto, ya corre el del MR.
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH =~ /^(develop|main|master)$/
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+
+stages:
+  - quality
+  - build
+  - release
+
+variables:
+  UV_CACHE_DIR: .uv-cache
+  # El cache de GitLab vive en otro sistema de ficheros: los hardlinks fallarían.
+  UV_LINK_MODE: copy
+
+default:
+  image: ghcr.io/astral-sh/uv:0.13.5-python3.12-bookworm-slim
+  cache:
+    key:
+      files:
+        - pyproject.toml
+    paths:
+      - .uv-cache
+  before_script:
+    - uv sync --all-extras --dev
+  after_script:
+    - uv cache prune --ci
+
+quality:
+  stage: quality
+  script:
+    - uv run ruff check .
+    - uv run ruff format --check .
+    - |
+      if [ -d src ]; then
+        uv run mypy src
+        uv run pytest --cov=src --cov-report=xml --cov-report=term-missing --junitxml=report.xml
+      else
+        echo "No hay src/, salto mypy y pytest"
+      fi
+  coverage: '/^TOTAL.*\s+(\d+(?:\.\d+)?)%/'
+  artifacts:
+    when: always
+    reports:
+      junit: report.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+
+build:
+  stage: build
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - uv build
+  artifacts:
+    paths:
+      - dist/
+    # El Release enlaza a estos artefactos: no deben caducar.
+    expire_in: never
+
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  rules:
+    - if: $CI_COMMIT_TAG
+  needs:
+    - job: build
+      artifacts: false
+  cache: []
+  before_script: []
+  after_script: []
+  script:
+    - |
+      VERSION="${CI_COMMIT_TAG#v}"
+      awk "/^## \[${VERSION}\]/{found=1; next} found && /^## \[/{exit} found{print}" \
+        docs/changelog.md > release_notes.md
+      # Eliminar líneas vacías del inicio
+      sed -i '/./,$!d' release_notes.md
+      [ -s release_notes.md ] || echo "_(sin notas de release para ${VERSION})_" > release_notes.md
+  release:
+    tag_name: $CI_COMMIT_TAG
+    name: $CI_COMMIT_TAG
+    description: release_notes.md
+    assets:
+      links:
+        - name: dist (wheel y sdist)
+          url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/browse/dist?job=build"
+
+# Para publicar en el registro de paquetes PyPI del propio proyecto en GitLab,
+# descomenta este job:
+#
+# publish:
+#   stage: release
+#   rules:
+#     - if: $CI_COMMIT_TAG
+#   needs:
+#     - job: build
+#       artifacts: true
+#   before_script: []
+#   script:
+#     - uv publish
+#         --publish-url "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi"
+#         --username gitlab-ci-token
+#         --password "${CI_JOB_TOKEN}"

@@ -15,10 +15,8 @@ Esta guía explica qué hace cada fichero del kit y cómo desplegarlo en tu proy
 | `.claude/commands/*.md` | Comandos slash personalizados: `/test`, `/lint`, `/commit`, `/review`, `/refactor`, `/audit`, `/docs`, `/vision`, `/spec`, `/state`, `/changelog`, `/implement-spec`, `/release`. |
 | `.claude/agents/*.md` | Subagentes especializados: `code-reviewer`, `test-writer`, `docs-maintainer`, `refactorer`. |
 | `.claude/skills/*/SKILL.md` | Skills que Claude carga bajo demanda: `fujitsu-ai-architecture` (arquitectura de referencia para aplicaciones de IA en producción). |
-| `.mcp.json` | Configuración de servidores MCP (GitHub, context7, filesystem) — todos desactivados por defecto. |
-| `.github/workflows/ci.yml` | CI: lint + type-check + tests en cada push/PR a main. |
-| `.github/workflows/release.yml` | Release automático al hacer push de un tag `v*.*.*`. |
-| `.github/dependabot.yml` | Actualizaciones mensuales de las versiones de GitHub Actions. |
+| `.mcp.json` | Configuración de servidores MCP (GitLab, context7, filesystem) — todos desactivados por defecto. |
+| `.gitlab-ci.yml` | CI/CD en GitLab: gate de calidad en cada merge request y push a `develop`/`main`; build y GitLab Release al hacer push de un tag `v*.*.*`. |
 | `pyproject.toml` | Config completa de Python: deps, ruff, mypy estricto, pytest, coverage. |
 | `.gitignore` | Ignora cachés, venvs, secrets, `.claude/.cache/` y ficheros locales de Claude. |
 | `.python-version` | Pinnea Python 3.12. |
@@ -51,22 +49,28 @@ Luego ejecuta `claude` desde tu proyecto e inicia sesión con tu cuenta.
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# En la red de Fujitsu: que uv use los certificados del sistema (incluyen la CA
+# corporativa). Sin esto, las descargas fallan con "invalid peer certificate: UnknownIssuer".
+echo 'export UV_SYSTEM_CERTS=1' >> ~/.bashrc
 ```
+
+`install.sh` y `.claude/settings.json` ya fijan `UV_SYSTEM_CERTS=1` para sus propias llamadas a `uv`; la línea de `~/.bashrc` cubre las que hagas tú a mano.
 
 ### Paso 3: desplegar el kit a tu proyecto
 
 ```bash
-# Clona este repo en algún lugar local
-git clone https://github.com/usuario/claude-setup ~/claude-setup
+# Clona este repo en algún lugar local (rama fujitsu)
+git clone -b fujitsu <url-del-kit> ~/claude-setup
 
 # Despliega a tu proyecto (crea la carpeta si no existe)
 ~/claude-setup/install.sh ~/proyectos/mi-app mi_app \
     --author-name "Tu Nombre" \
-    --author-email "tu@email.com" \
-    --github-user "tuusuario"
+    --author-email "tu.nombre@fujitsu.com" \
+    --gitlab-namespace "tugrupo"
 ```
 
-El script copia todos los ficheros, sustituye los tokens (`mi_paquete`, `Tu Nombre`, etc.), inicializa git, ejecuta `uv sync` e instala los hooks de pre-commit.
+El script copia todos los ficheros, sustituye los tokens (`mi_paquete`, `Tu Nombre`, el grupo de GitLab, etc.), inicializa git, ejecuta `uv sync` e instala los hooks de pre-commit. Si no pasas `--author-name` ni `--author-email`, usa tu `git config user.name` y `user.email`. El host de GitLab es `code.mahitahi.global.fujitsu.com` salvo que pases `--gitlab-host`.
 
 ### Paso 3 (alternativo): copiar a mano
 
@@ -95,11 +99,7 @@ mi-proyecto/
 │       ├── README.md
 │       ├── _template.md
 │       └── 0001-ejemplo.md
-├── .github/
-│   ├── workflows/
-│   │   ├── ci.yml
-│   │   └── release.yml
-│   └── dependabot.yml
+├── .gitlab-ci.yml
 └── .claude/
     ├── settings.json
     ├── hooks/
@@ -178,7 +178,7 @@ Dentro de la sesión de `claude`, escribe `/` y verás los comandos disponibles:
 | `/state` | Regenera `docs/STATE.md` con la estructura, stack, métricas y specs actuales. Preserva ADRs y contenido humano. |
 | `/changelog [rango]` | Añade entradas al `docs/changelog.md` para los cambios recientes. |
 | `/implement-spec <ruta>` | Implementa una spec aprobada paso a paso. Marca como Implemented y actualiza docs al terminar. |
-| `/release <versión>` | Prepara y publica una nueva versión: bump, changelog, tag `vX.Y.Z` y push. GitHub Actions crea el Release. |
+| `/release <versión>` | Prepara y publica una nueva versión: bump, changelog, tag `vX.Y.Z` y push. El pipeline de GitLab crea el Release. |
 
 ### Subagentes
 
@@ -255,7 +255,7 @@ Ajústalo a tu nivel de comodidad. Lo más habitual: añadir más cosas a `allow
 
 ### Cómo está montado
 
-La documentación NO es un sitio web. Son ficheros Markdown plano dentro de `docs/`, leídos directamente desde el editor o GitHub. Cuatro tipos de contenido:
+La documentación NO es un sitio web. Son ficheros Markdown plano dentro de `docs/`, leídos directamente desde el editor o GitLab. Cuatro tipos de contenido:
 
 ```
 docs/
@@ -424,14 +424,14 @@ claude
 5. Revisas, editas, ajustas — cuando estás conforme, cambias status a Approved.
 6. /implement-spec docs/specs/NNNN-slug.md
 7. (Claude implementa siguiendo la spec, marca como Implemented,
-   actualiza STATE.md + changelog.md, hace push a la rama y sugiere el PR)
-8. Creas el PR — manualmente o con el comando gh que Claude sugiere.
-9. CI pasa (ci.yml en verde) → mergeas el PR a main.
+   actualiza STATE.md + changelog.md, hace push a la rama y sugiere el merge request)
+8. Creas el merge request — en la web de GitLab o con el comando glab que Claude sugiere.
+9. CI pasa (pipeline en verde) → mergeas el merge request.
 10. Si la feature completa una unidad de release:
     git checkout main && git pull
     /release 0.2.0
     (Claude actualiza pyproject.toml + changelog, crea el tag, hace push;
-     GitHub Actions crea el Release automáticamente)
+     el pipeline de GitLab crea el Release automáticamente)
 ```
 
 ### Para arreglar un bug
@@ -507,13 +507,11 @@ El material largo o de consulta ocasional va en ficheros aparte dentro de la car
 
 ### Activar MCPs
 
-Edita `.mcp.json`, quita el prefijo `_` de la clave del servidor que quieras (p.ej. `_github` → `github`), y exporta los tokens necesarios:
+Edita `.mcp.json`, quita el prefijo `_` de la clave del servidor que quieras (p.ej. `_gitlab` → `gitlab`) y reinicia `claude`.
 
-```bash
-export GITHUB_PERSONAL_ACCESS_TOKEN=ghp_...
-```
+El servidor `gitlab` es el MCP integrado de la propia instancia (`https://code.mahitahi.global.fujitsu.com/api/v4/mcp`) y se autentica por OAuth con tu cuenta: la primera vez ejecuta `/mcp` dentro de Claude Code, elige `gitlab` y completa el login en el navegador. No hay tokens que exportar. Da acceso a issues, merge requests, pipelines y código.
 
-Reinicia `claude`.
+Los servidores que sí necesiten tokens los leen de variables de entorno (`${VAR}` en `.mcp.json`); expórtalas antes de lanzar `claude`.
 
 ---
 
@@ -528,45 +526,47 @@ spec aprobada
     ↓
 /implement-spec          ← Claude implementa, testea localmente y hace push a feature branch
     ↓
-PR abierto               ← Claude sugiere el comando gh pr create
+merge request abierto    ← Claude sugiere el comando glab mr create
     ↓
-ci.yml en verde          ← GitHub ejecuta ruff + mypy + pytest automáticamente
+job quality en verde     ← GitLab ejecuta ruff + mypy + pytest automáticamente
     ↓
-merge a main             ← Tú decides cuándo, con CI verde
+merge a develop/main     ← Tú decides cuándo, con CI verde
     ↓
 /release X.Y.Z           ← Cuando la unidad de release está completa
     ↓
-release.yml              ← GitHub crea el Release con el contenido de changelog.md
+jobs build + release     ← GitLab crea el Release con el contenido de changelog.md
 ```
 
-### CI (`ci.yml`)
+Todo está en un único `.gitlab-ci.yml`. Los jobs usan la imagen `ghcr.io/astral-sh/uv` (uv + Python 3.12). Si los runners de tu grupo no pueden descargar de `ghcr.io` o necesitan `tags:` concretos, ajústalo en `default:`.
 
-Se ejecuta en cada push y en cada PR. Hace: ruff check → ruff format → mypy → pytest con cobertura. **Un PR no se mergea con CI rojo.**
+### CI (job `quality`)
 
-La cobertura se sube opcionalmente a Codecov (configura el secret `CODECOV_TOKEN` en el repo de GitHub si quieres activarlo).
+Se ejecuta en cada merge request y en cada push a `develop`/`main`. Si una rama tiene un merge request abierto, solo corre el pipeline del merge request, para no duplicar. Hace: ruff check → ruff format → mypy → pytest con cobertura. **Un merge request no se mergea con CI rojo.**
 
-### Release (`release.yml`)
+La cobertura y los resultados de tests se publican de forma nativa en GitLab: porcentaje en el pipeline, informe JUnit en la pestaña *Tests* y líneas cubiertas en el diff del merge request. No hace falta Codecov.
 
-Se dispara al hacer push de un tag `v*.*.*`. Hace:
-1. Gate de calidad completo (igual que CI).
-2. Extrae la sección `[X.Y.Z]` de `docs/changelog.md`.
-3. Construye el paquete (`uv build`).
-4. Crea el GitHub Release con las notas del changelog y los artefactos en `dist/`.
+### Release (jobs `build` y `release`)
 
-Para publicar también en PyPI, configura un **Trusted Publisher** en pypi.org y descomenta el paso `uv publish` en el workflow.
+Se disparan al hacer push de un tag `v*.*.*`. Hacen:
+1. Gate de calidad completo (el mismo job `quality`).
+2. Construyen el paquete (`uv build`) y guardan `dist/` como artefacto permanente.
+3. Extraen la sección `[X.Y.Z]` de `docs/changelog.md`.
+4. Crean el GitLab Release con esas notas y un enlace a los artefactos de `dist/`.
+
+Para publicar el paquete en el registro PyPI del propio proyecto en GitLab, descomenta el job `publish` del final de `.gitlab-ci.yml`. Usa el `CI_JOB_TOKEN`, así que no necesita secretos.
 
 ### Release con `/release`
 
 ```bash
-# Desde main, con los PRs ya mergeados:
+# Desde main, con los merge requests ya mergeados:
 /release 0.2.0
 ```
 
-Claude hace: bump en `pyproject.toml` → rename `[No publicado]` → `[0.2.0]` en changelog → commit → tag anotado → push. El tag dispara `release.yml` automáticamente.
+Claude hace: bump en `pyproject.toml` → rename `[No publicado]` → `[0.2.0]` en changelog → commit → tag anotado → push. El tag dispara los jobs de release automáticamente.
 
-### Dependabot
+### Actualización de dependencias
 
-`.github/dependabot.yml` abre PRs mensuales para actualizar versiones de GitHub Actions (`actions/checkout`, `astral-sh/setup-uv`, etc.). Mergeables con un clic cuando CI pase.
+GitLab no tiene Dependabot. Si quieres actualizaciones automáticas de dependencias, configura [Renovate](https://docs.renovatebot.com/modules/platform/gitlab/) para el grupo. Mientras tanto, `uv lock --upgrade` las actualiza a mano.
 
 ## 9. Errores comunes
 
@@ -586,9 +586,9 @@ Claude hace: bump en `pyproject.toml` → rename `[No publicado]` → `[0.2.0]` 
 
 Cuando ya tengas soltura:
 
-- Considera añadir CI con GitHub Actions ejecutando ruff + mypy + pytest en cada PR.
-- Activa el MCP de GitHub para que Claude pueda leer y comentar en PRs.
-- Configura Dependabot/Renovate para mantener deps al día.
+- Activa el MCP de GitLab para que Claude pueda leer issues, revisar merge requests y consultar pipelines.
+- Instala [`glab`](https://gitlab.com/gitlab-org/cli) para que Claude cree merge requests y consulte pipelines desde la terminal.
+- Configura Renovate para mantener deps al día.
 - Si trabajas en equipo, comparte `CLAUDE.md` y revísalo en code reviews igual que el código.
 
 ¡Buen código!

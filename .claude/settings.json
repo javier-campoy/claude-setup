@@ -54,7 +54,8 @@
   },
   "env": {
     "PYTHONDONTWRITEBYTECODE": "1",
-    "PYTHONUNBUFFERED": "1"
+    "PYTHONUNBUFFERED": "1",
+    "UV_SYSTEM_CERTS": "1"
   },
   "worktree": {
     "baseRef": "fresh",

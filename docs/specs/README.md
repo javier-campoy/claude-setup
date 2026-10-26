@@ -53,7 +53,7 @@ Claude:
 3. Implementa los cambios siguiendo la spec **al pie de la letra**.
 4. Si en mitad encuentra algo que no encaja con la spec, **NO improvisa**: para y lo discute.
 5. Al terminar:
-   - Marca la spec como `Implemented` con commit/PR de referencia.
+   - Marca la spec como `Implemented` con commit o merge request de referencia.
    - Actualiza `docs/STATE.md` (movida de Active → Implemented).
    - Añade entrada en `docs/changelog.md`.
 
