@@ -14,6 +14,7 @@ Esta guía explica qué hace cada fichero del kit y cómo desplegarlo en tu proy
 | `.claude/hooks/pre-stop.sh` | Hook Stop: bloquea la sesión si hay cambios en `src/` sin actualizar docs. |
 | `.claude/commands/*.md` | Comandos slash personalizados: `/test`, `/lint`, `/commit`, `/review`, `/refactor`, `/audit`, `/docs`, `/vision`, `/spec`, `/state`, `/changelog`, `/implement-spec`, `/release`. |
 | `.claude/agents/*.md` | Subagentes especializados: `code-reviewer`, `test-writer`, `docs-maintainer`, `refactorer`. |
+| `.claude/skills/*/SKILL.md` | Skills que Claude carga bajo demanda: `fujitsu-ai-architecture` (arquitectura de referencia para aplicaciones de IA en producción). |
 | `.mcp.json` | Configuración de servidores MCP (GitHub, context7, filesystem) — todos desactivados por defecto. |
 | `.github/workflows/ci.yml` | CI: lint + type-check + tests en cada push/PR a main. |
 | `.github/workflows/release.yml` | Release automático al hacer push de un tag `v*.*.*`. |
@@ -118,11 +119,16 @@ mi-proyecto/
     │   ├── changelog.md
     │   ├── implement-spec.md
     │   └── release.md
-    └── agents/
-        ├── code-reviewer.md
-        ├── test-writer.md
-        ├── docs-maintainer.md
-        └── refactorer.md
+    ├── agents/
+    │   ├── code-reviewer.md
+    │   ├── test-writer.md
+    │   ├── docs-maintainer.md
+    │   └── refactorer.md
+    └── skills/
+        └── fujitsu-ai-architecture/
+            ├── SKILL.md
+            └── references/
+                └── estructura-referencia.md
 ```
 
 ### Paso 4: personalizar
@@ -195,6 +201,22 @@ Use the refactorer subagent to audit src/parser/ for drift against STATE.md.
 ```
 
 Los subagentes corren en su propio contexto, así que no contaminan el contexto principal con todos los ficheros que leen. Útil para tareas grandes y aisladas.
+
+### Skills
+
+Una skill es conocimiento empaquetado que Claude carga solo cuando el tema sale en la conversación. Al inicio de cada sesión únicamente lee su nombre y descripción; el contenido completo entra en contexto cuando hace falta. Por eso es el sitio adecuado para guías de dominio largas que no aplican a todos los proyectos.
+
+| Skill | Cuándo se carga | Qué aporta |
+|---|---|---|
+| `fujitsu-ai-architecture` | Al diseñar, especificar, implementar o revisar código que llama a un modelo o LLM, hace RAG u orquesta agentes | Cinco principios obligatorios, mapa de módulos, guardarraíles en tres capas, observabilidad mínima, evaluación continua, preguntas para specs y lista de revisión |
+
+`/spec`, `/review`, `code-reviewer` y `spec-architect` la cargan por su cuenta cuando el cambio es de IA. También puedes pedirla explícitamente:
+
+```
+Revisa este diseño contra la skill fujitsu-ai-architecture.
+```
+
+`fujitsu-ai-architecture` es un destilado de la guía *Production AI Application – Engineering Guidelines* de la wiki del grupo `fujitsu_ai` (acceso con login corporativo): https://code.mahitahi.global.fujitsu.com/groups/fujitsu_ai/-/wikis/Production-AI-Application-Architecture. Si la guía cambia, actualiza la skill.
 
 ### Hooks automáticos
 
@@ -467,6 +489,21 @@ model: sonnet
 
 System prompt completo del subagente.
 ```
+
+### Añadir una skill propia
+
+Crea `.claude/skills/<nombre>/SKILL.md`:
+
+```markdown
+---
+name: <nombre>
+description: Qué contiene y cuándo usarla. Claude decide si cargarla leyendo solo esto, así que nombra los temas y tareas que la disparan.
+---
+
+Contenido de la skill.
+```
+
+El material largo o de consulta ocasional va en ficheros aparte dentro de la carpeta de la skill (p.ej. `references/`), enlazados desde `SKILL.md`: así solo se leen cuando hacen falta.
 
 ### Activar MCPs
 

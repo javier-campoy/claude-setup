@@ -54,6 +54,7 @@ Este repo está configurado para sacarle el máximo partido a [Claude Code](http
 - `.claude/settings.json` define permisos seguros y un hook que auto-formatea con ruff tras cada edición.
 - `.claude/commands/` contiene comandos slash personalizados: `/vision`, `/spec`, `/implement-spec`, `/test`, `/lint`, `/commit`, `/review`, `/refactor`, `/docs`, `/state`, `/release`.
 - `.claude/agents/` define cuatro subagentes: `code-reviewer`, `test-writer`, `docs-maintainer` y `refactorer`.
+- `.claude/skills/` contiene skills que Claude carga bajo demanda: `fujitsu-ai-architecture`, la arquitectura de referencia de Fujitsu AI para aplicaciones de IA en producción.
 
 Lanza Claude Code en la raíz del repo:
 

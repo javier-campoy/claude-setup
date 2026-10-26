@@ -38,7 +38,7 @@ Proyecto Python (paquete/librería). Stack moderno basado en `uv`, `ruff` y `pyt
 │       └── <modulo>.md   # Un fichero por módulo en src/
 ├── pyproject.toml        # Config del proyecto (deps, ruff, pytest, mypy)
 ├── .python-version       # Versión de Python pinneada
-├── .claude/              # Comandos, subagentes, hooks y settings
+├── .claude/              # Comandos, subagentes, skills, hooks y settings
 └── .github/              # CI/CD (ci.yml, release.yml, dependabot.yml)
 ```
 
@@ -283,6 +283,12 @@ uv run pre-commit install --hook-type pre-commit --hook-type commit-msg --hook-t
 - `spec-architect` — **Árbitro de arquitectura** para specs en `Draft`. NO genera ni reescribe specs: valida coherencia estructural contra `VISION.md`, `STATE.md`, ADRs y otras specs activas. También detecta **specs gordas** (mezclan varios cambios conceptuales, tocan demasiados módulos, fases desacopladas, criterios de aceptación independientes) y propone trocearlas en sub-specs atómicas con nombres concretos y orden de implementación — una spec demasiado grande dispara el coste de `/implement-spec` (más contexto cargado, más iteraciones, más cuota quemada). Devuelve un veredicto (`GO` / `GO-WITH-CHANGES` / `RETHINK`) y un diff conceptual mínimo. **Único subagente en Opus; úsalo solo vía `/spec-review`** y solo en specs no triviales.
 
 Invócalos con: `Use the code-reviewer subagent to review my recent changes`. La excepción es `spec-architect`: se lanza siempre a través de `/spec-review`, nunca directamente.
+
+## Skills disponibles
+
+Las skills viven en `.claude/skills/<nombre>/SKILL.md` y Claude las carga solo cuando el tema aparece, así que no ocupan contexto en el resto de sesiones.
+
+- `fujitsu-ai-architecture` — Arquitectura de referencia de Fujitsu AI para aplicaciones de IA en producción: cinco principios obligatorios, mapa de módulos, guardarraíles, observabilidad y evaluación. **Cárgala siempre** que diseñes, especifiques, implementes o revises código que llame a un modelo o LLM, haga RAG u orqueste agentes. `/spec`, `/review`, `code-reviewer` y `spec-architect` la usan en esos casos.
 
 ## Comandos slash personalizados
 

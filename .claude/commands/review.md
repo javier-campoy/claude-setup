@@ -16,6 +16,7 @@ Realiza una revisión de código sobre los cambios pendientes.
    - **Performance** (operaciones N+1, bucles innecesarios).
    - **Tests** (¿hay cobertura del cambio?).
    - **Estilo** (consistencia con el resto del codebase).
+   - **IA** (solo si el cambio llama a modelos, construye prompts, hace RAG u orquesta agentes): carga la skill `fujitsu-ai-architecture` y aplica su lista "Al revisar código".
 5. Si los cambios son grandes (>5 ficheros o >300 líneas), considera invocar al subagente `code-reviewer` para una revisión más profunda.
 
 Formato del reporte:

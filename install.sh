@@ -190,10 +190,10 @@ if [ -f "$USER_SETTINGS_SRC" ]; then
     if [ "$NO_PROMPT" -eq 1 ]; then
         INSTALL_GLOBAL=1
     elif [ -f "$USER_SETTINGS_DST" ]; then
-        read -r -p "  Ya existe $USER_SETTINGS_DST. ¿Sobreescribir settings + agents + commands globales? [s/N]: " ans || ans=""
+        read -r -p "  Ya existe $USER_SETTINGS_DST. ¿Sobreescribir settings + agents + commands + skills globales? [s/N]: " ans || ans=""
         [[ "${ans,,}" == "s" || "${ans,,}" == "si" || "${ans,,}" == "sí" ]] && INSTALL_GLOBAL=1
     else
-        read -r -p "  Instalar config global (settings, agents, commands) en ~/.claude/? [S/n]: " ans || ans=""
+        read -r -p "  Instalar config global (settings, agents, commands, skills) en ~/.claude/? [S/n]: " ans || ans=""
         [[ -z "$ans" || "${ans,,}" == "s" || "${ans,,}" == "si" || "${ans,,}" == "sí" ]] && INSTALL_GLOBAL=1
     fi
     if [ "$INSTALL_GLOBAL" -eq 1 ]; then
@@ -207,7 +207,7 @@ else
     echo "  · user-settings.json no encontrado en el kit, salto"
 fi
 
-# --- agents y commands globales ----------------------------------------------
+# --- agents, commands y skills globales --------------------------------------
 DOTCLAUDE_SRC="$KIT_DIR/dotclaude"
 if [ "$INSTALL_GLOBAL" -eq 1 ] && [ -d "$DOTCLAUDE_SRC" ]; then
     for subdir in agents commands; do
@@ -220,6 +220,14 @@ if [ "$INSTALL_GLOBAL" -eq 1 ] && [ -d "$DOTCLAUDE_SRC" ]; then
             echo "  · $subdir ($count ficheros) → ~/.claude/$subdir/  OK"
         fi
     done
+    # Las skills son carpetas (SKILL.md + references/), no ficheros sueltos.
+    skills_src="$DOTCLAUDE_SRC/skills"
+    if [ -d "$skills_src" ] && [ "$(ls -A "$skills_src" 2>/dev/null)" ]; then
+        mkdir -p "$HOME/.claude/skills"
+        cp -r "$skills_src/." "$HOME/.claude/skills/"
+        count=$(find "$skills_src" -mindepth 1 -maxdepth 1 -type d | wc -l)
+        echo "  · skills ($count carpetas) → ~/.claude/skills/  OK"
+    fi
 fi
 
 echo ""

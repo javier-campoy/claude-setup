@@ -22,6 +22,7 @@ Crea una spec nueva siguiendo el flujo spec-driven del proyecto.
      - **§4 ADRs** — para no contradecir decisiones técnicas vigentes.
    - Lee `docs/specs/_template.md` para conocer la estructura.
    - Lee las specs `related` (las que vayas a declarar en el frontmatter) si existen, para no duplicar contratos.
+   - **Si la spec diseña un componente de IA** (llama a un modelo o LLM, hace RAG, orquesta agentes o expone salidas generadas), carga la skill `fujitsu-ai-architecture`. En las secciones 3-9 responde a sus seis preguntas de "Al escribir una spec" (capa e interfaz, sustitución del modelo, guardarraíles, trazas y métricas, evaluación, fallback), marcando `_[VERIFICAR]_` las que no puedas responder.
    - Mira `docs/specs/` (con `ls`) para determinar el siguiente número (`NNNN`): el máximo existente + 1, formateado a 4 dígitos. Si STATE §5 ya reserva un número para esta unidad de cambio, **usa ese** (no el máximo + 1).
 
 2. **Slug**:

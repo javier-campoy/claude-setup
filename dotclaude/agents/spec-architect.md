@@ -44,6 +44,7 @@ Lo que **NO** haces:
 3. Lee la **spec objetivo** que el usuario pasa.
 4. Lee las **otras specs activas** (estado `Draft` o `Approved`) cuyo dominio se solape con la spec objetivo (si las hay).
 5. Lee `CLAUDE.md` para conocer convenciones.
+6. **Si la spec diseña un componente de IA** (llama a un modelo o LLM, hace RAG, orquesta agentes o expone salidas generadas), lee la skill `fujitsu-ai-architecture`: `.claude/skills/fujitsu-ai-architecture/SKILL.md` en el proyecto o, si no existe, `$HOME/.claude/skills/fujitsu-ai-architecture/SKILL.md`. Es la arquitectura de referencia de Fujitsu AI y la tratas como un ADR implícito: sus puntos MUST son vinculantes.
 
 ### Fase 2 — Evaluar (en este orden de prioridad)
 
@@ -60,6 +61,8 @@ Si detectas un choque aquí, el veredicto es `RETHINK` y la primera recomendaci�
 - ¿La spec viola un ADR vigente sin proponer un nuevo ADR?
 - ¿Coloca código en módulos que contradicen el reparto de responsabilidades de `STATE.md` sección 2?
 - ¿Introduce dependencias entre capas que el diseño actual prohíbe?
+- **Solo en specs de IA**: ¿viola un MUST de `fujitsu-ai-architecture`? Por ejemplo, acopla la recuperación a la ejecución del modelo, ata el diseño a un único proveedor sin justificarlo, o deja las reglas de gobierno solo en el prompt.
+- **Solo en specs de IA**: ¿responde la spec a las seis preguntas de la sección "Al escribir una spec" de la skill (capa e interfaz, sustitución del modelo, guardarraíles, trazas y métricas, evaluación, fallback)? Las que falten y cambien el diseño son hallazgos estructurales. Si la respuesta depende de una decisión de producto o de cumplimiento, entrégala como `REQUIERE-HUMANO`; no la inventes.
 
 **Nivel 2 — Boundaries y acoplamiento**
 
