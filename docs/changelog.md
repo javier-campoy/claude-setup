@@ -71,4 +71,3 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es/1.1.0/) y este
 
 ### Seguridad
 - `.claude/settings.local.json` destrackeado de git.
-

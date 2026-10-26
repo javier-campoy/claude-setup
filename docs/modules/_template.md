@@ -42,7 +42,7 @@ _Descripción breve (imperativo)._
 | `arg1` | `Tipo` | Qué es. |
 | `arg2` | `Tipo` | Qué es. |
 
-**Retorna**: qué y bajo qué condiciones.  
+**Retorna**: qué y bajo qué condiciones.
 **Lanza**: `ErrorTipo` — cuándo.
 
 ---
