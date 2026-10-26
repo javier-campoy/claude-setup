@@ -196,12 +196,13 @@ Hotfixes triviales (typos, format, errores obvios de 1-2 líneas) pueden saltars
 
 ### Cuándo usar Opus (gate de arquitectura)
 
-El flujo está pensado para usar **Sonnet por defecto** y **Opus solo como árbitro estructural**, en un único punto:
+El flujo usa **Sonnet por defecto** (generar e implementar) y **Opus como árbitro** en los dos puntos de revisión (arquitectura de specs y revisión de código):
 
 - **Generación de specs**: Sonnet (`/spec`).
 - **Validación arquitectónica de specs no triviales**: Opus (`/spec-review`, subagente `spec-architect`). Se dispara **automáticamente** desde `/spec` cuando la heurística de trivialidad lo marca; también puede invocarse a mano sobre una spec ya creada.
 - **Implementación**: Sonnet (`/implement-spec`).
-- **Refactor, revisión de código, mantenimiento de docs**: Sonnet (subagentes `refactorer`, `code-reviewer`, `docs-maintainer`).
+- **Revisión de código**: Opus (subagente `code-reviewer`).
+- **Refactor y mantenimiento de docs**: Sonnet (subagentes `refactorer`, `docs-maintainer`).
 
 `/spec-review` se ejecuta (automática o manualmente) cuando la spec:
 
@@ -277,11 +278,11 @@ uv run pre-commit install --hook-type pre-commit --hook-type commit-msg --hook-t
 
 ## Subagentes disponibles
 
-- `code-reviewer` — Revisa cambios buscando bugs, problemas de seguridad y mejoras de diseño. (Sonnet)
+- `code-reviewer` — Revisa cambios buscando bugs, problemas de seguridad y mejoras de diseño. (Opus)
 - `test-writer` — Genera tests pytest exhaustivos para código existente. (Sonnet)
 - `docs-maintainer` — Audita coherencia código ↔ docs viva. Úsalo cuando sospeches que `STATE.md`, `changelog.md`, las specs o los `modules/*.md` no reflejan la realidad del código. (Sonnet)
 - `refactorer` — Mantiene el repo coherente con el norte de `docs/VISION.md` y la arquitectura/ADRs de `docs/STATE.md`. Detecta drift respecto al norte, drift arquitectónico, deuda estructural, duplicación e inconsistencias. Propone refactors priorizados; aplica los pequeños tras confirmación, sugiere `/spec` para los grandes. (Sonnet)
-- `spec-architect` — **Árbitro de arquitectura** para specs en `Draft`. NO genera ni reescribe specs: valida coherencia estructural contra `VISION.md`, `STATE.md`, ADRs y otras specs activas. También detecta **specs gordas** (mezclan varios cambios conceptuales, tocan demasiados módulos, fases desacopladas, criterios de aceptación independientes) y propone trocearlas en sub-specs atómicas con nombres concretos y orden de implementación — una spec demasiado grande dispara el coste de `/implement-spec` (más contexto cargado, más iteraciones, más cuota quemada). Devuelve un veredicto (`GO` / `GO-WITH-CHANGES` / `RETHINK`) y un diff conceptual mínimo. **Único subagente en Opus; úsalo solo vía `/spec-review`** y solo en specs no triviales.
+- `spec-architect` — **Árbitro de arquitectura** para specs en `Draft`. NO genera ni reescribe specs: valida coherencia estructural contra `VISION.md`, `STATE.md`, ADRs y otras specs activas. También detecta **specs gordas** (mezclan varios cambios conceptuales, tocan demasiados módulos, fases desacopladas, criterios de aceptación independientes) y propone trocearlas en sub-specs atómicas con nombres concretos y orden de implementación — una spec demasiado grande dispara el coste de `/implement-spec` (más contexto cargado, más iteraciones, más cuota quemada). Devuelve un veredicto (`GO` / `GO-WITH-CHANGES` / `RETHINK`) y un diff conceptual mínimo. **Opus; úsalo solo vía `/spec-review`** y solo en specs no triviales.
 
 Invócalos con: `Use the code-reviewer subagent to review my recent changes`. La excepción es `spec-architect`: se lanza siempre a través de `/spec-review`, nunca directamente.
 
