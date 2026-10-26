@@ -41,11 +41,11 @@ from mi_paquete.urls import parse_url, URL
 
 url: URL = parse_url("https://example.com/api/v1/users?id=42")
 
-url.scheme   # "https"
-url.host     # "example.com"
-url.port     # None
-url.path     # "/api/v1/users"
-url.query    # {"id": "42"}
+url.scheme  # "https"
+url.host  # "example.com"
+url.port  # None
+url.path  # "/api/v1/users"
+url.query  # {"id": "42"}
 url.canonical()  # URL canonicalizada (lowercase host, path normalizado)
 ```
 
