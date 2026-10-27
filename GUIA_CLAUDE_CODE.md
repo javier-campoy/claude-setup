@@ -244,7 +244,7 @@ rm -f .claude/.cache/src-changed.flag
 `.claude/settings.json` tiene tres listas:
 
 - **allow**: Claude ejecuta sin preguntar (lectura, ruff, pytest, git status/diff/log/commit, etc.).
-- **ask**: Claude pregunta antes (git push, git reset, instalar/eliminar deps, rm).
+- **ask**: Claude pregunta antes (por defecto vacío: `git push`, `git reset`, `git checkout`, `uv remove` y `rm` están en `allow`).
 - **deny**: Claude no puede (curl, wget, leer `.env`, leer claves privadas).
 
 Ajústalo a tu nivel de comodidad. Lo más habitual: añadir más cosas a `allow` cuando confíes más en el agente.

@@ -47,7 +47,12 @@
       "Bash(env:*)",
       "Bash(stat:*)",
       "Bash(realpath:*)",
-      "Bash(column:*)"
+      "Bash(column:*)",
+      "Bash(git push:*)",
+      "Bash(git reset:*)",
+      "Bash(git checkout:*)",
+      "Bash(uv remove:*)",
+      "Bash(rm:*)"
     ],
     "deny": [
       "Read(**/.env)",

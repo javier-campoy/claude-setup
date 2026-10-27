@@ -17,15 +17,15 @@
       "Bash(git commit:*)",
       "Read(./**)",
       "Edit(./**)",
-      "Write(./**)"
-    ],
-    "ask": [
+      "Write(./**)",
       "Bash(git push:*)",
       "Bash(git reset:*)",
       "Bash(git checkout:*)",
       "Bash(uv add:*)",
       "Bash(uv remove:*)",
       "Bash(rm:*)"
+    ],
+    "ask": [
     ],
     "deny": []
   },
