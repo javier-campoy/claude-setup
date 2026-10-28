@@ -28,6 +28,8 @@ Proyecto Python (paquete/librería). Stack moderno basado en `uv`, `ruff` y `pyt
 │   ├── VISION.md         # Norte del proyecto: dirección a futuro (humano, precede a las specs)
 │   ├── STATE.md          # Estado actual: arquitectura, stack, ADRs, specs
 │   ├── changelog.md      # Historial cronológico (Keep a Changelog)
+│   ├── dudas/            # Dudas y decisiones autónomas de spec-implementer, a revisar tras cada tanda
+│   │   └── README.md     # Índice y guía de revisión
 │   ├── specs/            # Specs (una por cambio significativo)
 │   │   ├── README.md
 │   │   ├── _template.md
@@ -104,7 +106,7 @@ uv run ruff check . --fix && uv run ruff format . && uv run mypy src && uv run p
 - **Dos modos de trabajo válidos**, según el tamaño del cambio:
   - **Directo en `develop`** — para hotfixes, typos y cambios pequeños. Commit en `develop`, `push` a `origin/develop`, CI en verde.
   - **Worktree por rama** — para specs, features grandes o trabajo paralelo. Cada cambio vive en su propio worktree sobre una rama `feat/...` o `fix/...` que parte de `develop` limpio (`baseRef: fresh` en `.claude/settings.json`).
-- **Flujo worktree** (recomendado para specs):
+- **Flujo worktree** (recomendado para specs; `/implement-spec` lo automatiza: crea el worktree, implementa, mergea a `develop` y lo borra):
   1. `EnterWorktree` (o `claude --worktree`) crea un árbol aislado en una rama nueva partiendo de `origin/develop`. `.venv` y las cachés se symlinkean desde el repo principal — no se duplican.
   2. Trabajo aislado en ese worktree: commits, lint, tests, push de la rama si quieres CI/backup remoto.
   3. **Al cerrar la rama**: merge a `develop` desde el repo principal (`git merge --no-ff feat/<slug>` o merge request si lo prefieres), borra la rama local y remota, sal del worktree con `ExitWorktree` (que limpia el árbol).
@@ -176,7 +178,9 @@ La documentación de este repo NO se publica como sitio web. Son ficheros Markdo
 2. revisas, editas, apruebas    → cambias status a Approved
                                  (no apruebes si el veredicto fue RETHINK)
 3. /implement-spec docs/specs/NNNN-slug.md
-                                 → Claude implementa siguiendo la spec (en Sonnet)
+                                 → crea worktree `.claude/worktrees/NNNN` en rama feat/NNNN-slug (desde origin/develop)
+                                 → subagente spec-implementer (Sonnet) implementa en ese worktree
+                                   y anota dudas/decisiones en docs/dudas/NNNN-slug.md
                                  → marca como Implemented
                                  → actualiza STATE.md + changelog.md + modules/
                                  → cierra directrices D-NN declaradas; propone nuevas con confirmación
@@ -185,7 +189,8 @@ La documentación de este repo NO se publica como sitio web. Son ficheros Markdo
                                    §12.2 a Implemented (operaciones de cierre, nunca estructurales)
                                  → propone (con confirmación humana) añadir a §12.3 las
                                    ideas para futuras specs detectadas en sección 10
-                                 → hace commit y push automáticamente
+                                 → commit en la rama, merge --no-ff a develop, push,
+                                   y borra worktree + rama
 ```
 
 > Nota: `/spec-review` también puede invocarse a mano sobre una spec ya existente (p.ej. revisión adicional tras editarla). Pero en el flujo normal, lo dispara `/spec` automáticamente.
@@ -227,7 +232,7 @@ Reglas duras:
 
 Los hooks están en `.claude/hooks/` y configurados en `.claude/settings.json`:
 
-1. **Auto-format** (`PostToolUse`): si Claude edita un `.py`, ejecuta `ruff format` + `ruff check --fix` automáticamente.
+1. **Auto-format** (`PostToolUse`): si Claude edita un `.py`, ejecuta `ruff format` + `ruff check --fix`; si edita un `.md`, ejecuta `ruff format` (formatea sus bloques ```` ```python ````; CI falla con `ruff format --check .` si no lo están).
 2. **Tras editar `.py` bajo `src/`** → marca `.claude/.cache/src-changed.flag`.
 3. **Tras editar `docs/STATE.md`, `docs/changelog.md` o `docs/specs/*.md`** → marca `.claude/.cache/docs-touched.flag`.
 4. **Al terminar la respuesta (`Stop` hook)**: si hay flag de src/ pero no de docs/, **bloquea con `exit 2`** y obliga a Claude a actualizar docs antes de cerrar la sesión.
@@ -282,6 +287,7 @@ uv run pre-commit install --hook-type pre-commit --hook-type commit-msg --hook-t
 - `test-writer` — Genera tests pytest exhaustivos para código existente. (Sonnet)
 - `docs-maintainer` — Audita coherencia código ↔ docs viva. Úsalo cuando sospeches que `STATE.md`, `changelog.md`, las specs o los `modules/*.md` no reflejan la realidad del código. (Sonnet)
 - `refactorer` — Mantiene el repo coherente con el norte de `docs/VISION.md` y la arquitectura/ADRs de `docs/STATE.md`. Detecta drift respecto al norte, drift arquitectónico, deuda estructural, duplicación e inconsistencias. Propone refactors priorizados; aplica los pequeños tras confirmación, sugiere `/spec` para los grandes. (Sonnet)
+- `spec-implementer` — Implementa el código de **una** spec `Approved` siguiendo su plan, sin improvisar, y trabaja de forma autónoma (sin preguntar) y registra en `docs/dudas/NNNN-slug.md` toda duda, decisión no prevista, desviación y propuesta diferida, para que el humano las revise después de la tanda. Lo lanza `/implement-spec` (paso 4) y trabaja siempre en un worktree aislado `feat/NNNN-slug` creado por el comando; no hace commit/merge ni toca VISION/STATE/changelog. (Sonnet)
 - `spec-architect` — **Árbitro de arquitectura** para specs en `Draft`. NO genera ni reescribe specs: valida coherencia estructural contra `VISION.md`, `STATE.md`, ADRs y otras specs activas. También detecta **specs gordas** (mezclan varios cambios conceptuales, tocan demasiados módulos, fases desacopladas, criterios de aceptación independientes) y propone trocearlas en sub-specs atómicas con nombres concretos y orden de implementación — una spec demasiado grande dispara el coste de `/implement-spec` (más contexto cargado, más iteraciones, más cuota quemada). Devuelve un veredicto (`GO` / `GO-WITH-CHANGES` / `RETHINK`) y un diff conceptual mínimo. **Opus; úsalo solo vía `/spec-review`** y solo en specs no triviales.
 
 Invócalos con: `Use the code-reviewer subagent to review my recent changes`. La excepción es `spec-architect`: se lanza siempre a través de `/spec-review`, nunca directamente.

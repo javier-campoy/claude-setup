@@ -22,6 +22,12 @@ if [[ "$FILE" == *.py ]]; then
     uv run ruff check --fix --quiet "$FILE" 2>/dev/null || true
 fi
 
+# Auto-format de Markdown: ruff format formatea los bloques ```python de los .md y el
+# job `quality` de CI (ruff format --check .) falla si no están formateados.
+if [[ "$FILE" == *.md ]]; then
+    uv run ruff format "$FILE" 2>/dev/null || true
+fi
+
 # Flag: cambios en src/ pendientes de sync de docs
 if [[ "$FILE" == */src/*.py ]]; then
     mkdir -p .claude/.cache

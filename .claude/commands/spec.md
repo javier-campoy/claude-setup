@@ -1,6 +1,6 @@
 ---
 description: Crea una nueva spec en docs/specs/ a partir de una descripción
-allowed-tools: Read, Write, Edit, Glob, Bash(ls:*), Bash(git log:*), Bash(date:*)
+allowed-tools: Read, Write, Edit, Glob, Bash(ls:*), Bash(uv run ruff format:*), Bash(git log:*), Bash(date:*)
 argument-hint: "<descripción breve de la feature/cambio>"
 ---
 
@@ -50,6 +50,7 @@ Crea una spec nueva siguiendo el flujo spec-driven del proyecto.
      - **Subsección "Directrices que esta spec cumple, cierra o abre"**: rellena la tabla del template con las directrices del frontmatter (`directives_followed` → "cumple", `directives_closed` → "cierra", `directives_opened` → "abre (propone)"). Una fila por directriz, con nota breve explicando cómo la honra.
    - Secciones 3-9: rellena con tu mejor entendimiento, marcando `_[VERIFICAR]_` donde haga falta input humano.
    - Sección 10: déjala vacía (la rellenarás al implementar).
+   - **Bloques de código Python**: escríbelos ya en estilo `ruff format` (comillas dobles, ≤100 columnas, sin alinear con espacios, comentarios en línea con dos espacios antes de `#`, comas finales al partir líneas). El job `quality` de CI ejecuta `ruff format --check .`, que también revisa los bloques ```` ```python ```` de los `.md`.
 
 4. **Actualiza el índice** en `docs/specs/README.md`:
    - Añade una fila a la tabla "Índice de specs".
@@ -103,7 +104,11 @@ Crea una spec nueva siguiendo el flujo spec-driven del proyecto.
      - Si **editar**: pide al usuario el texto exacto que prefiera, o que descarte ideas concretas de la lista.
    - **NUNCA inventes ideas que la spec no mencione**. Si la spec no sugiere ninguna futura, salta la propuesta sin pedir confirmación. Mejor cero ideas que ruido.
 
-8. **Reporta al usuario**:
+8. **Formatea los documentos tocados** (obligatorio, tras el paso 7 porque `/spec-review` también edita la spec):
+   `uv run ruff format docs/specs/NNNN-slug.md docs/specs/README.md docs/STATE.md docs/VISION.md`
+   y confirma con `uv run ruff format --check docs/` que sale limpio. Si reformateó algo, no hace falta avisar: es solo estilo.
+
+9. **Reporta al usuario**:
    - Ruta del fichero creado.
    - Clasificación de triviality y razón (paso 6).
    - Lista de los `_[VERIFICAR]_` que necesitan revisión humana.

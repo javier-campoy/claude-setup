@@ -11,6 +11,7 @@ Esta carpeta contiene la documentación viva del repositorio. Está pensada para
 | **[changelog.md](changelog.md)** | Historial cronológico de cambios. Formato Keep a Changelog. | Auto-actualizado por Claude tras cambios en `src/`. |
 | **[specs/](specs/)** | Especificaciones de features/cambios. Una spec se aprueba antes de implementar. | Tú con `/spec`, luego Claude la implementa con `/implement-spec`. |
 | **[modules/](modules/)** | Documentación por módulo: API pública, responsabilidad, dependencias, ejemplos. Un `.md` por cada módulo Python en `src/`. | Auto-generado por Claude con `/docs`, `/state` e `/implement-spec`. |
+| **[dudas/](dudas/)** | Dudas y decisiones no previstas que `spec-implementer` tomó de forma autónoma al implementar cada spec, para que las revises después en bloque. | Auto-generado por `spec-implementer`; tú marcas la revisión. |
 
 ## Flujo spec-driven
 
