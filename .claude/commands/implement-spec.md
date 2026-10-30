@@ -213,7 +213,7 @@ Si $ARGUMENTS incluye `--auto`, o el usuario te ha pedido implementar sin interv
 ## Reglas adicionales
 
 - **Sin `_[VERIFICAR]_` no se implementa.** Si la spec conserva marcadores `_[VERIFICAR]_`, son decisiones humanas sin resolver: para y pide que se aclaren. Nunca los rellenes adivinando.
-- **No mezcles dos specs en una sesión** salvo que el usuario lo pida explícitamente.
+- **No mezcles dos specs en una sesión** salvo que el usuario lo pida explícitamente. Para varias specs con ruta y paralelismo, usa `/implement-round`.
 - **No saltes pasos del Plan de implementación** aunque parezcan triviales.
 - **Si la spec está mal**, NO la "arregles" silenciosamente: anota el problema en sección 10 y para a discutir.
 - **Edición de VISION**: solo están permitidas las operaciones **aditivas** (no aplican aquí) y de **cierre** (marcar `[x]` un bullet de §4 cumplido por la spec; marcar §12.2 entrada como `Implemented`). Cualquier cambio estructural (principios, fases, no-objetivos, stack, ADRs estratégicos) requiere `/vision`. Las operaciones de cierre **siempre requieren confirmación humana explícita** antes de aplicar — Claude propone, humano confirma.

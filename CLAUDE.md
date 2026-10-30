@@ -201,11 +201,12 @@ Hotfixes triviales (typos, format, errores obvios de 1-2 líneas) pueden saltars
 
 ### Cuándo usar Opus (gate de arquitectura)
 
-El flujo usa **Sonnet por defecto** (generar e implementar) y **Opus como árbitro** en los dos puntos de revisión (arquitectura de specs y revisión de código):
+El flujo usa **Sonnet por defecto** (generar e implementar) y **Opus como árbitro** en los dos puntos de revisión (arquitectura de specs y revisión de código) y como coordinador de rondas:
 
 - **Generación de specs**: Sonnet (`/spec`).
 - **Validación arquitectónica de specs no triviales**: Opus (`/spec-review`, subagente `spec-architect`). Se dispara **automáticamente** desde `/spec` cuando la heurística de trivialidad lo marca; también puede invocarse a mano sobre una spec ya creada.
-- **Implementación**: Sonnet (`/implement-spec`).
+- **Implementación**: Sonnet (`/implement-spec`), también dentro de una ronda.
+- **Coordinación de rondas**: Opus (`/implement-round`).
 - **Revisión de código**: Opus (subagente `code-reviewer`).
 - **Refactor y mantenimiento de docs**: Sonnet (subagentes `refactorer`, `docs-maintainer`).
 
@@ -309,10 +310,11 @@ Las skills viven en `.claude/skills/<nombre>/SKILL.md` y Claude las carga solo c
 - `/docs` — Genera/actualiza docstrings en un fichero concreto y sincroniza el `docs/modules/<modulo>.md` correspondiente.
 - `/vision [descripción]` — Crea o evoluciona `docs/VISION.md`, el norte del proyecto. Se usa una vez antes de la primera spec, y luego cuando cambia la dirección (registrando la revisión).
 - `/spec <descripción> [--skip-review]` — Crea una nueva spec en `docs/specs/` (estado Draft). Exige que la visión esté rellenada. Clasifica la spec como trivial o no trivial y, si es no trivial, **encadena automáticamente `/spec-review`** sobre el draft. Pasa `--skip-review` para saltarte esa pasada por Opus.
-- `/spec-review <ruta-spec>` — Revisión arquitectónica de una spec por el subagente `spec-architect` (Opus). Único punto donde se usa Opus en el flujo. Se invoca automáticamente desde `/spec` para specs no triviales; también puede ejecutarse a mano sobre una spec ya creada (p.ej. tras editarla manualmente). Inserta una subsección "Revisión arquitectónica" en la spec con veredicto y cambios mínimos.
+- `/spec-review <ruta-spec>` — Revisión arquitectónica de una spec por el subagente `spec-architect` (Opus). Único punto donde se usa Opus en el flujo de specs. Se invoca automáticamente desde `/spec` para specs no triviales; también puede ejecutarse a mano sobre una spec ya creada (p.ej. tras editarla manualmente). Inserta una subsección "Revisión arquitectónica" en la spec con veredicto y cambios mínimos.
 - `/state` — Regenera `docs/STATE.md` con la estructura, stack, métricas y specs actuales, y sincroniza los `docs/modules/*.md`.
 - `/changelog [rango]` — Añade entradas al `docs/changelog.md` para los cambios recientes.
 - `/implement-spec <ruta>` — Implementa una spec aprobada paso a paso, actualizando docs (STATE.md, changelog, modules/), haciendo commit y push al terminar.
+- `/implement-round [NNNN ...] [--plan-only] [--auto] [--max-parallel N]` — Ronda de varias specs aprobadas: un coordinador (Opus) traza una ruta por olas con paralelismo donde es seguro, lanza a los `spec-implementer`, reparte los recursos exclusivos por turnos, verifica e integra en `develop` de una en una. Cada spec sigue el flujo de `/implement-spec`.
 - `/release <versión>` — Prepara y publica una nueva versión: bump en `pyproject.toml`, actualiza changelog, crea tag `vX.Y.Z` y hace push (el pipeline de GitLab crea el Release).
 
 ## Notas y decisiones de diseño
