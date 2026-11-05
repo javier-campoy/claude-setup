@@ -52,9 +52,11 @@ Este repo está configurado para sacarle el máximo partido a [Claude Code](http
 
 - `CLAUDE.md` describe convenciones y comandos del proyecto.
 - `.claude/settings.json` define permisos seguros y un hook que auto-formatea con ruff tras cada edición.
-- `.claude/commands/` contiene comandos slash personalizados: `/vision`, `/spec`, `/implement-spec`, `/implement-round`, `/test`, `/lint`, `/commit`, `/review`, `/refactor`, `/docs`, `/state`, `/release`.
+- `.claude/commands/` contiene comandos slash personalizados: `/vision`, `/spec`, `/implement-spec`, `/implement-round`, `/test`, `/lint`, `/commit`, `/review`, `/refactor`, `/docs`, `/state`, `/release` y `/nightshift` (este último, de usuario).
 - `.claude/agents/` define cuatro subagentes: `code-reviewer`, `test-writer`, `docs-maintainer` y `refactorer`.
 - `.claude/skills/` contiene skills que Claude carga bajo demanda: `fujitsu-ai-architecture`, la arquitectura de referencia de Fujitsu AI para aplicaciones de IA en producción.
+
+- **Modo nightshift** (`~/.claude/nightshift/`): de día los procesos de más de 20 min van en segundo plano si acaban antes de las 22:45 o se encolan; a las 23:00 cron lanza una sesión `claude -p` autónoma que ejecuta la cola y deja un informe por la mañana. Mientras dura la noche, un cerrojo deja en solo lectura las sesiones de día que sigan abiertas. Se activa por repo con `nightshift on`; ver la sección «Modo nightshift» de `CLAUDE.md`.
 
 Lanza Claude Code en la raíz del repo:
 

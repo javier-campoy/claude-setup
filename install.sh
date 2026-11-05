@@ -236,6 +236,16 @@ if [ "$INSTALL_GLOBAL" -eq 1 ] && [ -d "$DOTCLAUDE_SRC" ]; then
         count=$(find "$skills_src" -mindepth 1 -maxdepth 1 -type d | wc -l)
         echo "  · skills ($count carpetas) → ~/.claude/skills/  OK"
     fi
+    # nightshift: helper, hooks de usuario (los registra user-settings.json) y prompt nocturno.
+    ns_src="$DOTCLAUDE_SRC/nightshift"
+    if [ -d "$ns_src" ]; then
+        mkdir -p "$HOME/.claude/nightshift" "$HOME/.local/bin"
+        cp -r "$ns_src/." "$HOME/.claude/nightshift/"
+        chmod +x "$HOME/.claude/nightshift/bin/nightshift"
+        ln -sf "$HOME/.claude/nightshift/bin/nightshift" "$HOME/.local/bin/nightshift"
+        echo "  · nightshift → ~/.claude/nightshift/ (+ ~/.local/bin/nightshift)  OK"
+        echo "    Actívalo por repo con 'nightshift on' (instala la entrada de cron de las 23:00)."
+    fi
 fi
 
 echo ""

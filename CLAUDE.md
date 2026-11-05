@@ -315,7 +315,20 @@ Las skills viven en `.claude/skills/<nombre>/SKILL.md` y Claude las carga solo c
 - `/changelog [rango]` — Añade entradas al `docs/changelog.md` para los cambios recientes.
 - `/implement-spec <ruta>` — Implementa una spec aprobada paso a paso, actualizando docs (STATE.md, changelog, modules/), haciendo commit y push al terminar.
 - `/implement-round [NNNN ...] [--plan-only] [--auto] [--max-parallel N]` — Ronda de varias specs aprobadas: un coordinador (Opus) traza una ruta por olas con paralelismo donde es seguro, lanza a los `spec-implementer`, reparte los recursos exclusivos por turnos, verifica e integra en `develop` de una en una. Cada spec sigue el flujo de `/implement-spec`.
+- `/nightshift on|off|status|add|run|unlock` — Modo nightshift (comando de usuario): aplaza lo pesado a una sesión nocturna autónoma. Ver «Modo nightshift».
 - `/release <versión>` — Prepara y publica una nueva versión: bump en `pyproject.toml`, actualiza changelog, crea tag `vX.Y.Z` y hace push (el pipeline de GitLab crea el Release).
+
+## Modo nightshift (procesos pesados de noche)
+
+Herramienta de usuario (`~/.claude/nightshift/`, comando `/nightshift`; la instala `install.sh`). Con el modo activo en el repo (`nightshift on`; se queda puesto hasta `off`):
+
+- **De día no se ejecuta en primer plano nada que tarde más de 20 min sin interacción humana** (builds y ejecuciones del compose, e2e, tests lentos, procesos por lotes largos). **Primero se mira si cabe en segundo plano**: si no choca con otro proceso pesado ni con su recurso exclusivo y acaba antes de las 22:45 (`day_cutoff`), se lanza con `run_in_background: true` y `NIGHTSHIFT_ETA_MIN=<min>` delante, y se sigue trabajando en paralelo. Si no cabe, se encola con `/nightshift add` (o `nightshift new <slug>`) y la tarea se rellena entera (directorio y commit, comandos con sus gotchas, criterio de éxito, qué hacer si falla y qué queda autorizado después). El hook `guard.py` bloquea los casos conocidos (patrones de Docker por defecto más `heavy_patterns` de `.claude/nightshift.json`); los demás dependen de la estimación de Claude. Las rondas y los subagentes del ciclo normal no cuentan como pesados.
+- **Combinar y no repetir**: antes de encolar se revisa la cola; si otra tarea ya ejecuta lo mismo (mismo build, e2e o commit), se amplía esa. Lo que ya tiene resultado conocido y no aporta lo suficiente al repetirlo no se encola. De noche, los prerrequisitos compartidos se hacen una vez y las ejecuciones redundantes se omiten con su motivo (plantilla: «Agrupable con», «Se puede omitir si», «Qué aporta»).
+- Encolar no es esperar: la sesión de día deja el trabajo coherente sin el resultado y sigue.
+- **A las 23:00** cron (`nightshift run-all`) lanza `claude -p` autónomo sobre la cola congelada, con todos los permisos que declaran las tareas (nunca `main`). Lanzamiento manual: `/nightshift run`. Si la sesión se corta, el lanzador la reanuda hasta la hora límite (`deadline`, 08:30).
+- **Mientras dura la noche** hay un cerrojo (`.claude/nightshift/running.json`): las demás sesiones, incluidas las de día que se quedaron abiertas, solo pueden leer y añadir tareas a la cola para otra noche.
+- **Por la mañana**: `.claude/nightshift/nights/<fecha>/informe.md`. La primera sesión de día lo resume sola (hook `SessionStart`). Estado: `nightshift status`.
+- Para ejecutar algo pesado de día en primer plano porque el usuario lo pide expresamente: `NIGHTSHIFT_BYPASS=1` delante del comando.
 
 ## Notas y decisiones de diseño
 

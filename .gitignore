@@ -26,6 +26,8 @@ htmlcov/
 # Claude Code
 .claude/.cache/
 .claude/settings.local.json
+# nightshift: cola, cerrojo e informes nocturnos (estado local; la config es .claude/nightshift.json)
+.claude/nightshift/
 
 # OS / editor
 *:Zone.Identifier

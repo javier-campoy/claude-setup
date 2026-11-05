@@ -1,0 +1,10 @@
+{
+  "_comment": "Config de nightshift del repo (ver ~/.claude/nightshift/bin/nightshift). heavy_patterns se suman a los de Docker por defecto (build y compose up/build/run); regex sobre el comando Bash. day_cutoff: hora tope para que un pesado lanzado de día en segundo plano termine. deadline: hora límite de la noche.",
+  "heavy_patterns": [
+    "\\bpytest\\b.*-m\\s+[\\\"']?(?!not\\b)[^\\\"']*\\b(slow|integration)\\b"
+  ],
+  "day_cutoff": "22:45",
+  "deadline": "08:30",
+  "max_attempts": 8,
+  "retry_wait_minutes": 20
+}

@@ -1,0 +1,559 @@
+#!/usr/bin/env python3
+"""nightshift: aplaza los procesos pesados del día a una sesión nocturna autónoma.
+
+De día, con el modo activado en un repo, el hook `guard.py` bloquea los comandos
+pesados (más de 20 minutos y sin interacción humana) y Claude los encola aquí. A las
+23:00 cron lanza `nightshift run-all`, que abre una sesión `claude -p` por cada repo
+con el modo activo y la cola no vacía. Por la mañana queda un informe por noche.
+
+Estado por repo (fuera de git): `<raíz>/.claude/nightshift/`
+    enabled              bandera del modo (se queda puesta hasta `off`)
+    queue/*.md           tareas pendientes
+    running.json         cerrojo mientras dura la noche
+    nights/<id>/         cola congelada, informe.md, DONE, logs y jobs de esa noche
+Configuración por repo (versionada, opcional): `<raíz>/.claude/nightshift.json`
+Estado de usuario: `~/.claude/nightshift/` (projects.txt, env.json, cron.log)
+
+Subcomandos: on, off, status, new, launch, run-all, unlock, bg, wait, doctor,
+install-cron. `nightshift <subcomando> -h` para el detalle.
+"""
+
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import json
+import os
+import re
+import shlex
+import shutil
+import signal
+import subprocess
+import sys
+import time
+import uuid
+from pathlib import Path
+
+HOME_DIR = Path(os.environ.get("NIGHTSHIFT_HOME", Path.home() / ".claude" / "nightshift"))
+REGISTRY = HOME_DIR / "projects.txt"
+ENV_SNAPSHOT = HOME_DIR / "env.json"
+KIT_DIR = Path(__file__).resolve().parent.parent
+PROMPT_FILE = KIT_DIR / "night-prompt.md"
+TEMPLATE_FILE = KIT_DIR / "task-template.md"
+SELF = Path(__file__).resolve()
+CRON_MARK = "# nightshift"
+CRON_LINE = (
+    f"0 23 * * * {SELF} run-all >> {HOME_DIR}/cron.log 2>&1 {CRON_MARK}"
+)
+
+DEFAULT_DEADLINE = "08:30"
+DEFAULT_MAX_ATTEMPTS = 8
+DEFAULT_RETRY_WAIT_MIN = 20
+WAIT_MAX_SECONDS = 540  # por debajo del timeout de 10 min de la herramienta Bash
+
+CONTINUE_PROMPT = (
+    "La sesión nocturna se cortó (límite de uso, error o fin prematuro). Retómala: "
+    "relee {night}/informe.md y {night}/queue/, comprueba con `nightshift wait` los jobs "
+    "que siguieran en marcha y continúa por la primera tarea sin cerrar. No repitas lo "
+    "que el informe da por hecho. Cuando no quede nada, escribe el resumen final y crea "
+    "{night}/DONE."
+)
+
+
+# --------------------------------------------------------------------------- util
+
+
+def log(msg: str) -> None:
+    stamp = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print(f"[{stamp}] {msg}", flush=True)
+
+
+def project_root(start: Path) -> Path | None:
+    """Raíz de la copia principal del repo (también desde un worktree)."""
+    start = start if start.is_dir() else start.parent
+    while not start.exists():
+        start = start.parent
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(start), "rev-parse", "--path-format=absolute", "--git-common-dir"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+    common = Path(out)
+    return common.parent if common.name == ".git" else common
+
+
+def state_dir(root: Path) -> Path:
+    return root / ".claude" / "nightshift"
+
+
+def read_lock(root: Path) -> dict | None:
+    lock = state_dir(root) / "running.json"
+    try:
+        return json.loads(lock.read_text())
+    except (OSError, ValueError):
+        return None
+
+
+def lock_alive(info: dict | None) -> bool:
+    """El cerrojo vale si su PID vive y sigue siendo un proceso de nightshift."""
+    if not info:
+        return False
+    pid = int(info.get("pid", 0))
+    if pid <= 0:
+        return False
+    try:
+        cmdline = Path(f"/proc/{pid}/cmdline").read_bytes()
+    except OSError:
+        return False
+    return b"nightshift" in cmdline
+
+
+def queue_files(root: Path) -> list[Path]:
+    q = state_dir(root) / "queue"
+    return sorted(q.glob("*.md")) if q.is_dir() else []
+
+
+def task_title(path: Path) -> str:
+    for line in path.read_text(errors="replace").splitlines():
+        if line.startswith("# "):
+            return line[2:].strip()
+    return path.stem
+
+
+def nights(root: Path) -> list[Path]:
+    d = state_dir(root) / "nights"
+    return sorted(p for p in d.iterdir() if p.is_dir()) if d.is_dir() else []
+
+
+def registry() -> list[Path]:
+    if not REGISTRY.exists():
+        return []
+    return [Path(line) for line in REGISTRY.read_text().splitlines() if line.strip()]
+
+
+def register(root: Path) -> None:
+    HOME_DIR.mkdir(parents=True, exist_ok=True)
+    roots = registry()
+    if root not in roots:
+        roots.append(root)
+        REGISTRY.write_text("".join(f"{r}\n" for r in roots))
+
+
+def snapshot_env() -> None:
+    """Guarda el PATH de una sesión interactiva: cron arranca con uno mínimo y sin
+    las rutas de Docker Desktop (`/Docker/host/bin`)."""
+    HOME_DIR.mkdir(parents=True, exist_ok=True)
+    keep = {k: os.environ[k] for k in ("PATH", "WSLENV") if k in os.environ}
+    ENV_SNAPSHOT.write_text(json.dumps(keep, indent=1))
+
+
+def find_interop() -> str | None:
+    """Socket de interop de WSL con su proceso vivo, para que `docker.exe` funcione
+    desde cron (que no hereda WSL_INTEROP)."""
+    run = Path("/run/WSL")
+    if not run.is_dir():
+        return None
+    cands = []
+    for s in run.glob("*_interop"):
+        pid = s.name.split("_", 1)[0]
+        if pid.isdigit() and Path(f"/proc/{pid}").exists():
+            cands.append((int(pid), str(s)))
+    return max(cands)[1] if cands else None
+
+
+def night_env(root: Path, night: Path) -> dict[str, str]:
+    env = {k: v for k, v in os.environ.items() if not k.startswith(("CLAUDECODE", "CLAUDE_CODE_", "CLAUDE_PID", "CLAUDE_EFFORT"))}
+    path = env.get("PATH", "/usr/bin:/bin").split(":")
+    if ENV_SNAPSHOT.exists():
+        try:
+            snap = json.loads(ENV_SNAPSHOT.read_text())
+        except ValueError:
+            snap = {}
+        # El PATH heredado manda; la foto solo añade lo que le falta (lo que cron no trae).
+        path += [p for p in snap.get("PATH", "").split(":") if p and p not in path]
+        if "WSLENV" in snap and "WSLENV" not in env:
+            env["WSLENV"] = snap["WSLENV"]
+    local_bin = str(Path.home() / ".local" / "bin")
+    for extra in (local_bin, str(SELF.parent)):  # respaldo, al final: no tapan el PATH heredado
+        if extra not in path:
+            path.append(extra)
+    env["PATH"] = ":".join(path)
+    if not env.get("WSL_INTEROP") or not Path(env["WSL_INTEROP"]).exists():
+        sock = find_interop()
+        if sock:
+            env["WSL_INTEROP"] = sock
+    env["NIGHTSHIFT_SESSION"] = "1"
+    env["NIGHTSHIFT_ROOT"] = str(root)
+    env["NIGHTSHIFT_NIGHT_DIR"] = str(night)
+    return env
+
+
+def parse_hhmm(value: str, base: dt.datetime) -> dt.datetime:
+    hh, mm = (int(x) for x in value.split(":"))
+    target = base.replace(hour=hh, minute=mm, second=0, microsecond=0)
+    return target if target > base else target + dt.timedelta(days=1)
+
+
+def load_config(root: Path) -> dict:
+    cfg = root / ".claude" / "nightshift.json"
+    try:
+        return json.loads(cfg.read_text())
+    except (OSError, ValueError):
+        return {}
+
+
+# --------------------------------------------------------------------- comandos día
+
+
+def cmd_on(args: argparse.Namespace) -> int:
+    root = require_root()
+    sd = state_dir(root)
+    (sd / "queue").mkdir(parents=True, exist_ok=True)
+    (sd / "enabled").write_text(dt.datetime.now().isoformat(timespec="seconds") + "\n")
+    register(root)
+    snapshot_env()
+    ensure_cron()
+    print(f"nightshift activado en {root}. Cola: {sd / 'queue'}. Lanzamiento automático a las 23:00.")
+    return 0
+
+
+def cmd_off(args: argparse.Namespace) -> int:
+    root = require_root()
+    (state_dir(root) / "enabled").unlink(missing_ok=True)
+    print(f"nightshift desactivado en {root} (la cola se conserva: {len(queue_files(root))} tareas).")
+    return 0
+
+
+def cmd_status(args: argparse.Namespace) -> int:
+    root = require_root()
+    sd = state_dir(root)
+    print(f"Repo: {root}")
+    print(f"Modo: {'ACTIVO' if (sd / 'enabled').exists() else 'inactivo'}")
+    info = read_lock(root)
+    if info:
+        alive = lock_alive(info)
+        print(f"Cerrojo: {'noche EN CURSO' if alive else 'HUÉRFANO (usa nightshift unlock)'} — {info}")
+    tasks = queue_files(root)
+    print(f"Cola ({len(tasks)}):")
+    for t in tasks:
+        print(f"  - {t.name}: {task_title(t)}")
+    ns = nights(root)
+    if ns:
+        last = ns[-1]
+        done = (last / "DONE").exists()
+        print(f"Última noche: {last.name} ({'terminada' if done else 'sin DONE'}) — informe: {last / 'informe.md'}")
+    return 0
+
+
+def slugify(text: str) -> str:
+    s = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
+    return s[:50] or "tarea"
+
+
+def cmd_new(args: argparse.Namespace) -> int:
+    root = require_root()
+    q = state_dir(root) / "queue"
+    q.mkdir(parents=True, exist_ok=True)
+    stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+    path = q / f"{stamp}-{slugify(args.slug)}.md"
+    body = TEMPLATE_FILE.read_text() if TEMPLATE_FILE.exists() else "# {title}\n"
+    session = os.environ.get("CLAUDE_CODE_SESSION_ID", "")
+    path.write_text(
+        body.replace("{title}", args.title or args.slug)
+        .replace("{created}", dt.datetime.now().isoformat(timespec="minutes"))
+        .replace("{session}", session)
+        .replace("{cwd}", os.getcwd())
+    )
+    if not (state_dir(root) / "enabled").exists():
+        print("AVISO: el modo nightshift no está activo en este repo; la tarea no se lanzará a las 23:00.", file=sys.stderr)
+    print(path)
+    return 0
+
+
+def cmd_unlock(args: argparse.Namespace) -> int:
+    root = require_root()
+    info = read_lock(root)
+    if not info:
+        print("No hay cerrojo.")
+        return 0
+    if lock_alive(info) and not args.force:
+        print(f"La noche sigue en curso (pid {info.get('pid')}). Usa --force para quitarlo igualmente.", file=sys.stderr)
+        return 1
+    (state_dir(root) / "running.json").unlink(missing_ok=True)
+    print("Cerrojo eliminado.")
+    return 0
+
+
+# ------------------------------------------------------------------- comandos noche
+
+
+def new_night_dir(root: Path) -> Path:
+    base = state_dir(root) / "nights"
+    base.mkdir(parents=True, exist_ok=True)
+    day = dt.date.today().isoformat()
+    path, n = base / day, 2
+    while path.exists():
+        path, n = base / f"{day}-{n}", n + 1
+    path.mkdir()
+    return path
+
+
+def render_prompt(root: Path, night: Path, deadline: dt.datetime) -> str:
+    text = PROMPT_FILE.read_text()
+    return (
+        text.replace("{ROOT}", str(root))
+        .replace("{NIGHT}", str(night))
+        .replace("{DEADLINE}", deadline.strftime("%Y-%m-%d %H:%M"))
+        .replace("{NIGHTSHIFT}", str(SELF))
+    )
+
+
+def run_claude(prompt: str, root: Path, env: dict, out: Path, resume: str | None, session_id: str | None) -> tuple[int, str | None]:
+    cmd = [
+        "claude", "-p",
+        "--permission-mode", "bypassPermissions",
+        "--output-format", "stream-json", "--verbose",
+    ]
+    if resume:
+        cmd += ["--resume", resume]
+    elif session_id:
+        cmd += ["--session-id", session_id]
+    seen: str | None = None
+    with out.open("w") as fh:
+        proc = subprocess.Popen(cmd, cwd=root, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        assert proc.stdin and proc.stdout
+        proc.stdin.write(prompt)
+        proc.stdin.close()
+        for line in proc.stdout:
+            fh.write(line)
+            fh.flush()
+            if seen is None and '"session_id"' in line:
+                try:
+                    seen = json.loads(line).get("session_id")
+                except ValueError:
+                    pass
+        rc = proc.wait()
+    return rc, seen
+
+
+def cmd_launch(args: argparse.Namespace) -> int:
+    root = Path(args.root).resolve() if args.root else require_root()
+    sd = state_dir(root)
+    if lock_alive(read_lock(root)):
+        log(f"{root}: ya hay una noche en curso; no lanzo otra.")
+        return 1
+    tasks = queue_files(root)
+    if not tasks:
+        log(f"{root}: cola vacía; nada que hacer esta noche.")
+        return 0
+    cfg = load_config(root)
+    now = dt.datetime.now()
+    deadline = parse_hhmm(args.deadline or cfg.get("deadline", DEFAULT_DEADLINE), now)
+    night = new_night_dir(root)
+    (night / "queue").mkdir()
+    for t in tasks:  # congela la cola: lo que se añada desde ahora es para otra noche
+        shutil.move(str(t), night / "queue" / t.name)
+    lock = {"pid": os.getpid(), "night": night.name, "started": now.isoformat(timespec="seconds"), "deadline": deadline.isoformat(timespec="minutes")}
+    (sd / "running.json").write_text(json.dumps(lock, indent=1))
+    env = night_env(root, night)
+    log(f"{root}: noche {night.name} con {len(tasks)} tareas, límite {deadline:%H:%M}.")
+
+    def cleanup(*_: object) -> None:
+        (sd / "running.json").unlink(missing_ok=True)
+
+    signal.signal(signal.SIGTERM, lambda *a: (cleanup(), sys.exit(143)))
+    try:
+        session: str | None = None
+        max_attempts = int(cfg.get("max_attempts", DEFAULT_MAX_ATTEMPTS))
+        wait_min = int(cfg.get("retry_wait_minutes", DEFAULT_RETRY_WAIT_MIN))
+        for attempt in range(1, max_attempts + 1):
+            if attempt == 1:
+                prompt = render_prompt(root, night, deadline)
+                rc, seen = run_claude(prompt, root, env, night / f"session-{attempt}.jsonl", None, str(uuid.uuid4()))
+            else:
+                prompt = CONTINUE_PROMPT.format(night=night)
+                rc, seen = run_claude(prompt, root, env, night / f"session-{attempt}.jsonl", session, None)
+            session = seen or session
+            log(f"intento {attempt}: claude salió con {rc} (sesión {session}).")
+            if (night / "DONE").exists():
+                break
+            if dt.datetime.now() + dt.timedelta(minutes=wait_min) >= deadline:
+                log("sin DONE y sin tiempo para otro intento antes del límite.")
+                break
+            time.sleep(wait_min * 60)
+        if not (night / "DONE").exists():
+            with (night / "informe.md").open("a") as fh:
+                fh.write(
+                    f"\n\n## Cierre del lanzador ({dt.datetime.now():%Y-%m-%d %H:%M})\n\n"
+                    "La sesión nocturna terminó **sin crear DONE**: la noche quedó a medias. "
+                    f"Revisa las tareas sin resultado y los logs `session-*.jsonl` de {night}.\n"
+                )
+    finally:
+        cleanup()
+    log(f"{root}: noche {night.name} cerrada. Informe: {night / 'informe.md'}")
+    return 0
+
+
+def cmd_run_all(args: argparse.Namespace) -> int:
+    log("run-all: inicio")
+    for root in registry():
+        if not (state_dir(root) / "enabled").exists():
+            continue
+        try:
+            subprocess.run([sys.executable, str(SELF), "launch", "--root", str(root)], check=False)
+        except OSError as exc:
+            log(f"{root}: no se pudo lanzar ({exc})")
+    log("run-all: fin")
+    return 0
+
+
+# ------------------------------------------------------------------ jobs de fondo
+
+
+def jobs_dir() -> Path:
+    night = os.environ.get("NIGHTSHIFT_NIGHT_DIR")
+    if night:
+        return Path(night) / "jobs"
+    root = require_root()
+    return state_dir(root) / "jobs"
+
+
+def cmd_bg(args: argparse.Namespace) -> int:
+    cmd = args.command[1:] if args.command and args.command[0] == "--" else args.command
+    if not cmd:
+        print("Falta el comando: nightshift bg <nombre> -- <comando...>", file=sys.stderr)
+        return 2
+    jd = jobs_dir() / slugify(args.name)
+    if (jd / "pid").exists() and not (jd / "exit").exists():
+        print(f"Ya hay un job '{args.name}' en marcha en {jd}", file=sys.stderr)
+        return 1
+    shutil.rmtree(jd, ignore_errors=True)
+    jd.mkdir(parents=True)
+    script = cmd[0] if len(cmd) == 1 else shlex.join(cmd)
+    (jd / "cmd").write_text(script + "\n")
+    # En su propio bash: un `exit` del comando no se salta la escritura del código.
+    wrapper = f'bash -c {shlex.quote(script)}\necho $? > "{jd}/exit"\n'
+    with (jd / "log").open("w") as logf:
+        proc = subprocess.Popen(["bash", "-c", wrapper], cwd=os.getcwd(), stdout=logf, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)
+    (jd / "pid").write_text(f"{proc.pid}\n")
+    (jd / "started").write_text(dt.datetime.now().isoformat(timespec="seconds") + "\n")
+    print(f"job {args.name} lanzado (pid {proc.pid}); log: {jd / 'log'}. Espera con: nightshift wait {args.name}")
+    return 0
+
+
+def cmd_wait(args: argparse.Namespace) -> int:
+    jd = jobs_dir() / slugify(args.name)
+    if not (jd / "pid").exists():
+        print(f"No existe el job '{args.name}' en {jd.parent}", file=sys.stderr)
+        return 2
+    limit = time.monotonic() + min(args.max, WAIT_MAX_SECONDS)
+    pid = int((jd / "pid").read_text())
+    while time.monotonic() < limit:
+        if (jd / "exit").exists() or not Path(f"/proc/{pid}").exists():
+            break
+        time.sleep(5)
+    tail = subprocess.run(["tail", "-n", str(args.tail), str(jd / "log")], capture_output=True, text=True).stdout
+    if (jd / "exit").exists():
+        code = (jd / "exit").read_text().strip()
+        print(f"job {args.name}: TERMINADO con código {code}\n--- últimas líneas ---\n{tail}")
+        return 0 if code == "0" else 1
+    if not Path(f"/proc/{pid}").exists():
+        print(f"job {args.name}: MURIÓ sin código de salida\n--- últimas líneas ---\n{tail}")
+        return 1
+    print(f"job {args.name}: SIGUE EN MARCHA (vuelve a llamar a nightshift wait)\n--- últimas líneas ---\n{tail}")
+    return 3
+
+
+# ------------------------------------------------------------------------ sistema
+
+
+def ensure_cron() -> None:
+    if os.environ.get("NIGHTSHIFT_NO_CRON") == "1":  # tests
+        return
+    current = subprocess.run(["crontab", "-l"], capture_output=True, text=True)
+    lines = current.stdout.splitlines() if current.returncode == 0 else []
+    lines = [ln for ln in lines if CRON_MARK not in ln]
+    lines.append(CRON_LINE)
+    subprocess.run(["crontab", "-"], input="\n".join(lines) + "\n", text=True, check=True)
+
+
+def cmd_install_cron(args: argparse.Namespace) -> int:
+    ensure_cron()
+    print(f"crontab: {CRON_LINE}")
+    return 0
+
+
+def cmd_doctor(args: argparse.Namespace) -> int:
+    """Comprueba que el entorno nocturno tiene lo necesario (útil también desde cron)."""
+    root = Path(args.root).resolve() if args.root else project_root(Path.cwd()) or Path.cwd()
+    env = night_env(root, root)
+    ok = True
+    for name, cmd in (
+        ("claude", ["claude", "--version"]),
+        ("git", ["git", "--version"]),
+        ("uv", ["uv", "--version"]),
+        ("docker.exe", ["docker.exe", "version", "--format", "{{.Server.Version}}"]),
+    ):
+        try:
+            r = subprocess.run(cmd, env=env, capture_output=True, text=True, timeout=60)
+            good = r.returncode == 0
+            detail = (r.stdout or r.stderr).strip().splitlines()[:1]
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            good, detail = False, [str(exc)]
+        ok &= good or name == "docker.exe"
+        print(f"{'OK ' if good else 'MAL'} {name}: {detail[0] if detail else ''}")
+    cron = subprocess.run(["crontab", "-l"], capture_output=True, text=True).stdout
+    print(f"{'OK ' if CRON_MARK in cron else 'MAL'} crontab con la entrada de nightshift")
+    print(f"WSL_INTEROP={env.get('WSL_INTEROP')}")
+    return 0 if ok else 1
+
+
+def require_root() -> Path:
+    root = project_root(Path.cwd())
+    if root is None:
+        print("No estoy dentro de un repo git.", file=sys.stderr)
+        sys.exit(2)
+    return root
+
+
+def main(argv: list[str] | None = None) -> int:
+    p = argparse.ArgumentParser(prog="nightshift", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    sub = p.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("on", help="activa el modo en este repo (y la entrada de cron)").set_defaults(fn=cmd_on)
+    sub.add_parser("off", help="desactiva el modo (conserva la cola)").set_defaults(fn=cmd_off)
+    sub.add_parser("status", help="modo, cerrojo, cola y última noche").set_defaults(fn=cmd_status)
+    s = sub.add_parser("new", help="crea una tarea en la cola desde la plantilla e imprime su ruta")
+    s.add_argument("slug")
+    s.add_argument("--title")
+    s.set_defaults(fn=cmd_new)
+    s = sub.add_parser("launch", help="lanza la noche ya (manual) en este repo")
+    s.add_argument("--root")
+    s.add_argument("--deadline", help="HH:MM; por defecto 08:30 o `deadline` de .claude/nightshift.json")
+    s.set_defaults(fn=cmd_launch)
+    sub.add_parser("run-all", help="lo que ejecuta cron: una noche por repo activo").set_defaults(fn=cmd_run_all)
+    s = sub.add_parser("unlock", help="quita un cerrojo huérfano")
+    s.add_argument("--force", action="store_true")
+    s.set_defaults(fn=cmd_unlock)
+    s = sub.add_parser("bg", help="lanza un comando largo desacoplado de la sesión")
+    s.add_argument("name")
+    s.add_argument("command", nargs=argparse.REMAINDER)
+    s.set_defaults(fn=cmd_bg)
+    s = sub.add_parser("wait", help="espera a un job de bg hasta 9 min y enseña su estado")
+    s.add_argument("name")
+    s.add_argument("--max", type=int, default=WAIT_MAX_SECONDS)
+    s.add_argument("--tail", type=int, default=30)
+    s.set_defaults(fn=cmd_wait)
+    sub.add_parser("install-cron", help="(re)instala la entrada de las 23:00").set_defaults(fn=cmd_install_cron)
+    s = sub.add_parser("doctor", help="comprueba claude, uv, docker.exe y cron con el entorno nocturno")
+    s.add_argument("--root")
+    s.set_defaults(fn=cmd_doctor)
+    args = p.parse_args(argv)
+    return int(args.fn(args))
+
+
+if __name__ == "__main__":
+    sys.exit(main())
